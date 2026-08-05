@@ -1,8 +1,9 @@
 # Allow — Força de Vendas Externa
 
 Aplicativo da vendedora externa da Allow (AL, PE e PB), construído com os
-padrões do STOK Studio. Especificação e decisões em
-`docs/rfcs/RFC-005-PRODUTO-ALLOW-FORCA-DE-VENDAS.md`.
+padrões do STOK Studio. Especificação e decisões no repositório do Studio:
+`stok-studio/docs/rfcs/RFC-005-PRODUTO-ALLOW-FORCA-DE-VENDAS.md` (aprovação
+registrada na RD-072).
 
 ## O que a Fase 1 entrega
 
