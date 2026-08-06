@@ -2,7 +2,7 @@
 
 import { esquemaPedidoCatalogo, errosPorCampo } from '@/dominio/validacao'
 import { montarLinkWhatsApp, montarMensagemPedido } from '@/dominio/whatsapp'
-import { ambienteServidor } from '@/lib/env'
+import { whatsappDaVendedora } from '@/lib/env'
 import { criarClienteAdministrativo } from '@/lib/supabase/admin'
 import { type Produto } from '@/lib/tipos'
 
@@ -107,7 +107,13 @@ export async function fecharPedido(
     totalCentavos,
     observacao: pedido.observacao,
   })
-  const url = montarLinkWhatsApp(ambienteServidor().whatsappVendedora, mensagem)
+  const numeroDaVendedora = whatsappDaVendedora()
+  if (numeroDaVendedora === null) {
+    return {
+      erros: { geral: 'O catálogo está com o WhatsApp mal configurado. Avise a vendedora.' },
+    }
+  }
+  const url = montarLinkWhatsApp(numeroDaVendedora, mensagem)
   if (url === null) {
     return {
       erros: { geral: 'O catálogo está com o WhatsApp mal configurado. Avise a vendedora.' },
