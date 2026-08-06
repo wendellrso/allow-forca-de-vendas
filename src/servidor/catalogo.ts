@@ -3,7 +3,7 @@ import { type Produto } from '@/lib/tipos'
 
 export type ProdutoDoCatalogo = Pick<
   Produto,
-  'id' | 'name' | 'description' | 'price_cents' | 'unit'
+  'id' | 'name' | 'description' | 'price_cents' | 'unit' | 'image_url'
 >
 
 /**
@@ -14,7 +14,7 @@ export async function listarProdutosDoCatalogo(): Promise<ProdutoDoCatalogo[]> {
   const supabase = criarClienteAdministrativo()
   const { data } = await supabase
     .from('products')
-    .select('id, name, description, price_cents, unit')
+    .select('id, name, description, price_cents, unit, image_url')
     .eq('active', true)
     .order('name')
     .limit(500)

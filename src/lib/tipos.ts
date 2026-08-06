@@ -37,6 +37,7 @@ export interface Produto {
   stock_quantity: number
   min_stock: number | null
   active: boolean
+  image_url: string | null
   created_at: string
 }
 

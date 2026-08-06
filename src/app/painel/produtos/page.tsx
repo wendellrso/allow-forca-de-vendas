@@ -41,19 +41,30 @@ export default async function PaginaProdutos() {
               <li key={produto.id}>
                 <Link
                   href={`/painel/produtos/${produto.id}`}
-                  className={`${classeCartao} hover:border-marca-600 block`}
+                  className={`${classeCartao} hover:border-marca-600 flex items-center gap-3`}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold text-zinc-900">{produto.name}</p>
-                    <p className="font-semibold text-zinc-900">
-                      {formatarCentavos(produto.price_cents)}
-                    </p>
-                  </div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Distintivo tom={estoqueBaixo ? 'atencao' : 'neutro'}>
-                      Estoque: {produto.stock_quantity} {produto.unit}
-                    </Distintivo>
-                    {!produto.active ? <Distintivo tom="perigo">Inativo</Distintivo> : null}
+                  {produto.image_url !== null ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- imagem do Storage, sem otimizador no Worker
+                    <img
+                      src={produto.image_url}
+                      alt=""
+                      loading="lazy"
+                      className="h-14 w-14 shrink-0 rounded-lg border border-zinc-100 object-cover"
+                    />
+                  ) : null}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-zinc-900">{produto.name}</p>
+                      <p className="font-semibold text-zinc-900">
+                        {formatarCentavos(produto.price_cents)}
+                      </p>
+                    </div>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Distintivo tom={estoqueBaixo ? 'atencao' : 'neutro'}>
+                        Estoque: {produto.stock_quantity} {produto.unit}
+                      </Distintivo>
+                      {!produto.active ? <Distintivo tom="perigo">Inativo</Distintivo> : null}
+                    </div>
                   </div>
                 </Link>
               </li>

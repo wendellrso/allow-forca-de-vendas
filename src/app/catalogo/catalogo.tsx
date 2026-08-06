@@ -20,6 +20,7 @@ interface ProdutoDoCatalogo {
   description: string | null
   price_cents: number
   unit: string
+  image_url: string | null
 }
 
 export function Catalogo({ produtos }: { produtos: ProdutoDoCatalogo[] }) {
@@ -71,7 +72,16 @@ export function Catalogo({ produtos }: { produtos: ProdutoDoCatalogo[] }) {
           return (
             <li key={produto.id} className={classeCartao}>
               <div className="flex items-center justify-between gap-3">
-                <div>
+                {produto.image_url !== null ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- imagem do Storage, sem otimizador no Worker
+                  <img
+                    src={produto.image_url}
+                    alt={produto.name}
+                    loading="lazy"
+                    className="h-20 w-20 shrink-0 rounded-lg border border-zinc-100 object-cover"
+                  />
+                ) : null}
+                <div className="min-w-0 flex-1">
                   <p className="font-semibold text-zinc-900">{produto.name}</p>
                   {produto.description !== null ? (
                     <p className="text-sm text-zinc-500">{produto.description}</p>

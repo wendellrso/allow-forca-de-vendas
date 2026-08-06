@@ -6,6 +6,7 @@ import { converterParaCentavos } from '@/dominio/dinheiro'
 import { esquemaProduto, errosPorCampo } from '@/dominio/validacao'
 import { exigirSessao } from '@/lib/sessao'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
+import { enviarImagemDeProduto, removerImagemDeProduto } from '@/servidor/imagens'
 
 export interface EstadoFormularioProduto {
   erros?: Record<string, string>
@@ -38,6 +39,23 @@ export async function salvarProduto(
     return { erros: errosPorCampo(resultado.error) }
   }
 
+  // Foto: o navegador envia um JPEG já redimensionado como data URL.
+  const imagemDataUrl = String(dados.get('imagemDataUrl') ?? '')
+  const imagemAtual = String(dados.get('imagemAtual') ?? '')
+  const removerImagem = dados.get('removerImagem') === 'on'
+
+  let novaImagem: string | null | undefined
+  if (removerImagem) {
+    novaImagem = null
+  }
+  if (imagemDataUrl !== '') {
+    const enviada = await enviarImagemDeProduto(imagemDataUrl)
+    if (enviada === null) {
+      return { erros: { imagem: 'Não foi possível enviar a foto. Tente outra imagem.' } }
+    }
+    novaImagem = enviada
+  }
+
   const produto = resultado.data
   const linha = {
     name: produto.nome,
@@ -48,6 +66,7 @@ export async function salvarProduto(
     ncm: produto.ncm === '' || produto.ncm === undefined ? null : produto.ncm,
     min_stock: produto.estoqueMinimo ?? null,
     active: produto.ativo,
+    ...(novaImagem !== undefined ? { image_url: novaImagem } : {}),
   }
 
   const supabase = await criarClienteServidor()
@@ -62,7 +81,14 @@ export async function salvarProduto(
     return { erros: { geral: 'Não foi possível salvar. Tente novamente.' } }
   }
 
+  // A foto substituída ou removida sai do Storage; falha aqui não desfaz o
+  // salvamento — objeto órfão é lixo, não defeito.
+  if (novaImagem !== undefined && imagemAtual !== '' && imagemAtual !== novaImagem) {
+    await removerImagemDeProduto(imagemAtual)
+  }
+
   revalidatePath('/painel/produtos')
+  revalidatePath('/catalogo')
   redirect('/painel/produtos')
 }
 
