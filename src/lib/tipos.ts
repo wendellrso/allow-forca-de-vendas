@@ -1,5 +1,4 @@
 import { type CondicaoPagamento, type StatusVenda } from '@/dominio/venda'
-import { type CategoriaDespesa } from '@/dominio/relatorio'
 
 /**
  * Formas das linhas do banco usadas pela aplicação. Escritas à mão, como no
@@ -94,7 +93,7 @@ export interface ContaAReceber {
 
 export interface Despesa {
   id: string
-  category: CategoriaDespesa
+  category_id: string
   description: string | null
   amount_cents: number
   expense_date: string
@@ -102,4 +101,10 @@ export interface Despesa {
   state: string | null
   status: 'a_pagar' | 'pago'
   created_at: string
+}
+
+export interface CategoriaDeDespesa {
+  id: string
+  name: string
+  archived_at: string | null
 }

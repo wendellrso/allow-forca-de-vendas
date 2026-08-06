@@ -132,7 +132,7 @@ describe('esquemaDespesa', () => {
   it('aceita despesa válida', () => {
     expect(
       esquemaDespesa.safeParse({
-        categoria: 'combustivel',
+        categoriaId: '5a3febc8-6a5a-4e3e-9b57-8f9a1d2c3b4a',
         valorCentavos: 8550,
         data: '2026-08-05',
         situacao: 'pago',
@@ -140,10 +140,10 @@ describe('esquemaDespesa', () => {
     ).toBe(true)
   })
 
-  it('recusa categoria estranha e valor zero', () => {
+  it('recusa categoria inválida e valor zero', () => {
     expect(
       esquemaDespesa.safeParse({
-        categoria: 'lazer',
+        categoriaId: 'nao-e-uuid',
         valorCentavos: 100,
         data: '2026-08-05',
         situacao: 'pago',
@@ -151,7 +151,7 @@ describe('esquemaDespesa', () => {
     ).toBe(false)
     expect(
       esquemaDespesa.safeParse({
-        categoria: 'outros',
+        categoriaId: '5a3febc8-6a5a-4e3e-9b57-8f9a1d2c3b4a',
         valorCentavos: 0,
         data: '2026-08-05',
         situacao: 'pago',

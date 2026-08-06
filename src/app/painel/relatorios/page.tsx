@@ -4,8 +4,6 @@ import {
   agruparVendasPorCidade,
   agruparVendasPorUf,
   calcularResultadoDoPeriodo,
-  CATEGORIAS_DESPESA,
-  ROTULO_CATEGORIA,
   type DespesaParaRelatorio,
   type VendaParaRelatorio,
 } from '@/dominio/relatorio'
@@ -52,7 +50,7 @@ export default async function PaginaRelatorios({
       .lte('confirmed_at', `${ate}T23:59:59-03:00`),
     supabase
       .from('expenses')
-      .select('category, amount_cents')
+      .select('amount_cents, expense_categories(name)')
       .gte('expense_date', de)
       .lte('expense_date', ate),
   ])
@@ -65,12 +63,12 @@ export default async function PaginaRelatorios({
     totalCentavos: linha.total_cents,
   }))
   const despesas = (
-    (linhasDespesas ?? []) as {
-      category: DespesaParaRelatorio['categoria']
+    (linhasDespesas ?? []) as unknown as {
       amount_cents: number
+      expense_categories: { name: string } | null
     }[]
   ).map((linha): DespesaParaRelatorio => ({
-    categoria: linha.category,
+    categoria: linha.expense_categories?.name ?? 'Sem categoria',
     valorCentavos: linha.amount_cents,
   }))
 
@@ -126,13 +124,14 @@ export default async function PaginaRelatorios({
             </p>
           </div>
         </div>
-        <p className="mt-2 text-sm text-zinc-500">
-          Despesas:{' '}
-          {CATEGORIAS_DESPESA.map(
-            (categoria) =>
-              `${ROTULO_CATEGORIA[categoria]} ${formatarCentavos(resultado.despesasPorCategoria[categoria])}`,
-          ).join(' · ')}
-        </p>
+        {resultado.despesasPorCategoria.length > 0 ? (
+          <p className="mt-2 text-sm text-zinc-500">
+            Despesas:{' '}
+            {resultado.despesasPorCategoria
+              .map((linha) => `${linha.categoria} ${formatarCentavos(linha.totalCentavos)}`)
+              .join(' · ')}
+          </p>
+        ) : null}
       </section>
 
       <section aria-labelledby="titulo-uf" className="mb-6">

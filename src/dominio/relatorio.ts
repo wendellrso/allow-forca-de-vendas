@@ -77,27 +77,22 @@ export function agruparVendasPorUf(vendas: readonly VendaParaRelatorio[]): Linha
   return linhas.sort((a, b) => b.totalCentavos - a.totalCentavos)
 }
 
-export const CATEGORIAS_DESPESA = ['hospedagem', 'alimentacao', 'combustivel', 'outros'] as const
-
-export type CategoriaDespesa = (typeof CATEGORIAS_DESPESA)[number]
-
-export const ROTULO_CATEGORIA: Record<CategoriaDespesa, string> = {
-  hospedagem: 'Hospedagem',
-  alimentacao: 'Alimentação',
-  combustivel: 'Combustível',
-  outros: 'Outros',
+export interface DespesaParaRelatorio {
+  /** Nome da categoria — livre, definido pela Organização. */
+  categoria: string
+  valorCentavos: number
 }
 
-export interface DespesaParaRelatorio {
-  categoria: CategoriaDespesa
-  valorCentavos: number
+export interface TotalPorCategoria {
+  categoria: string
+  totalCentavos: number
 }
 
 export interface ResultadoDoPeriodo {
   totalVendidoCentavos: number
   totalDespesasCentavos: number
   resultadoCentavos: number
-  despesasPorCategoria: Record<CategoriaDespesa, number>
+  despesasPorCategoria: TotalPorCategoria[]
 }
 
 /** O número que a planilha nunca entregava: vendas menos custo de vender. */
@@ -107,22 +102,24 @@ export function calcularResultadoDoPeriodo(
 ): ResultadoDoPeriodo {
   const totalVendido = vendas.reduce((total, venda) => total + venda.totalCentavos, 0)
 
-  const porCategoria: Record<CategoriaDespesa, number> = {
-    hospedagem: 0,
-    alimentacao: 0,
-    combustivel: 0,
-    outros: 0,
-  }
+  const porCategoria = new Map<string, number>()
   let totalDespesas = 0
   for (const despesa of despesas) {
-    porCategoria[despesa.categoria] += despesa.valorCentavos
+    porCategoria.set(
+      despesa.categoria,
+      (porCategoria.get(despesa.categoria) ?? 0) + despesa.valorCentavos,
+    )
     totalDespesas += despesa.valorCentavos
   }
+
+  const despesasPorCategoria = [...porCategoria.entries()]
+    .map(([categoria, totalCentavos]) => ({ categoria, totalCentavos }))
+    .sort((a, b) => b.totalCentavos - a.totalCentavos)
 
   return {
     totalVendidoCentavos: totalVendido,
     totalDespesasCentavos: totalDespesas,
     resultadoCentavos: totalVendido - totalDespesas,
-    despesasPorCategoria: porCategoria,
+    despesasPorCategoria,
   }
 }

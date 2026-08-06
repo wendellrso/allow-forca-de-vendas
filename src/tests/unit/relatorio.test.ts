@@ -60,21 +60,26 @@ describe('agruparVendasPorUf', () => {
 })
 
 describe('calcularResultadoDoPeriodo', () => {
-  it('resultado é vendas menos despesas, com quebra por categoria', () => {
+  it('resultado é vendas menos despesas, com quebra por categoria livre', () => {
     const resultado = calcularResultadoDoPeriodo(vendas, [
-      { categoria: 'hospedagem', valorCentavos: 20000 },
-      { categoria: 'combustivel', valorCentavos: 15000 },
-      { categoria: 'combustivel', valorCentavos: 5000 },
+      { categoria: 'Hospedagem', valorCentavos: 20000 },
+      { categoria: 'Combustível', valorCentavos: 15000 },
+      { categoria: 'Combustível', valorCentavos: 5000 },
+      { categoria: 'Pedágio', valorCentavos: 700 },
     ])
     expect(resultado.totalVendidoCentavos).toBe(95000)
-    expect(resultado.totalDespesasCentavos).toBe(40000)
-    expect(resultado.resultadoCentavos).toBe(55000)
-    expect(resultado.despesasPorCategoria.combustivel).toBe(20000)
-    expect(resultado.despesasPorCategoria.alimentacao).toBe(0)
+    expect(resultado.totalDespesasCentavos).toBe(40700)
+    expect(resultado.resultadoCentavos).toBe(54300)
+    expect(resultado.despesasPorCategoria).toEqual([
+      { categoria: 'Hospedagem', totalCentavos: 20000 },
+      { categoria: 'Combustível', totalCentavos: 20000 },
+      { categoria: 'Pedágio', totalCentavos: 700 },
+    ])
   })
 
   it('período sem vendas pode dar resultado negativo', () => {
-    const resultado = calcularResultadoDoPeriodo([], [{ categoria: 'outros', valorCentavos: 100 }])
+    const resultado = calcularResultadoDoPeriodo([], [{ categoria: 'Outros', valorCentavos: 100 }])
     expect(resultado.resultadoCentavos).toBe(-100)
+    expect(resultado.despesasPorCategoria).toHaveLength(1)
   })
 })

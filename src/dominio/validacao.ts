@@ -101,7 +101,7 @@ export const esquemaPedidoCatalogo = z.object({
 export type DadosPedidoCatalogo = z.infer<typeof esquemaPedidoCatalogo>
 
 export const esquemaDespesa = z.object({
-  categoria: z.enum(['hospedagem', 'alimentacao', 'combustivel', 'outros']),
+  categoriaId: z.uuid('Escolha a categoria.'),
   descricao: z.string().trim().max(200, 'Use no máximo 200 letras.').optional(),
   valorCentavos: z
     .number()
@@ -118,6 +118,14 @@ export const esquemaDespesa = z.object({
 })
 
 export type DadosDespesa = z.infer<typeof esquemaDespesa>
+
+export const esquemaCategoriaDeDespesa = z.object({
+  nome: z
+    .string()
+    .trim()
+    .min(2, 'O nome precisa de pelo menos 2 letras.')
+    .max(40, 'Use no máximo 40 letras.'),
+})
 
 /**
  * Traduz o resultado de um parse do zod para o formato de erro exibido nos

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { converterParaCentavos } from '@/dominio/dinheiro'
-import { esquemaDespesa, errosPorCampo } from '@/dominio/validacao'
+import { esquemaCategoriaDeDespesa, esquemaDespesa, errosPorCampo } from '@/dominio/validacao'
 import { exigirSessao } from '@/lib/sessao'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
 
@@ -59,7 +59,7 @@ export async function salvarDespesa(
   }
 
   const resultado = esquemaDespesa.safeParse({
-    categoria: dados.get('categoria'),
+    categoriaId: dados.get('categoriaId'),
     descricao: dados.get('descricao') ?? '',
     valorCentavos,
     data: dados.get('data'),
@@ -75,7 +75,7 @@ export async function salvarDespesa(
   const supabase = await criarClienteServidor()
   const { error } = await supabase.from('expenses').insert({
     organization_id: sessao.organizacaoId,
-    category: despesa.categoria,
+    category_id: despesa.categoriaId,
     description:
       despesa.descricao === '' || despesa.descricao === undefined ? null : despesa.descricao,
     amount_cents: despesa.valorCentavos,
@@ -112,5 +112,53 @@ export async function excluirDespesa(dados: FormData): Promise<void> {
   }
   const supabase = await criarClienteServidor()
   await supabase.from('expenses').delete().eq('id', id)
+  revalidatePath('/painel/financeiro')
+}
+
+export interface EstadoCategoria {
+  erro?: string
+  criadaId?: string
+}
+
+export async function criarCategoria(
+  _anterior: EstadoCategoria,
+  dados: FormData,
+): Promise<EstadoCategoria> {
+  const sessao = await exigirSessao()
+
+  const resultado = esquemaCategoriaDeDespesa.safeParse({ nome: dados.get('nome') })
+  if (!resultado.success) {
+    return { erro: errosPorCampo(resultado.error).nome ?? 'Nome inválido.' }
+  }
+
+  const supabase = await criarClienteServidor()
+  const { data, error } = await supabase
+    .from('expense_categories')
+    .insert({ organization_id: sessao.organizacaoId, name: resultado.data.nome })
+    .select('id')
+    .single()
+
+  if (error !== null) {
+    if (error.code === '23505') {
+      return { erro: 'Já existe uma categoria com este nome.' }
+    }
+    return { erro: 'Não foi possível criar a categoria.' }
+  }
+
+  revalidatePath('/painel/financeiro')
+  return { criadaId: (data as { id: string }).id }
+}
+
+export async function arquivarCategoria(dados: FormData): Promise<void> {
+  await exigirSessao()
+  const id = dados.get('id')
+  if (typeof id !== 'string' || id === '') {
+    return
+  }
+  const supabase = await criarClienteServidor()
+  await supabase
+    .from('expense_categories')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('id', id)
   revalidatePath('/painel/financeiro')
 }
