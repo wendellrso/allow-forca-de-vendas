@@ -6,6 +6,14 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-06-01",
   "compatibility_flags": ["nodejs_compat"],
+  // O deploy NÃO apaga variáveis e segredos configurados no painel.
+  "keep_vars": true,
+  // Valores públicos por natureza (a chave anon é a publicável do Supabase).
+  // ALLOW_WHATSAPP_VENDEDORA e SUPABASE_SERVICE_ROLE_KEY vivem no painel.
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://kkoxrvbbgoicplyoweoi.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtrb3hydmJiZ29pY3BseW93ZW9pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NzQzMzksImV4cCI6MjEwMTU1MDMzOX0.MflmzhQcBrv5nUTVxUmyNUBL8HUOTyp0aRJus-nXYA4",
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS",
