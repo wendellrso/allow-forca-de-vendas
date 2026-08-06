@@ -68,6 +68,30 @@ export function ErroDeCampo({ mensagem }: { mensagem?: string }) {
   return <p className="mt-1 text-sm text-red-600">{mensagem}</p>
 }
 
+export function BarraDeProgresso({
+  valor,
+  maximo,
+  tom = 'vinho',
+}: {
+  valor: number
+  maximo: number
+  tom?: 'vinho' | 'verde' | 'ambar'
+}) {
+  const percentual = maximo <= 0 ? 0 : Math.min(Math.round((valor / maximo) * 100), 100)
+  const cor = { vinho: 'bg-marca-600', verde: 'bg-emerald-500', ambar: 'bg-amber-500' }[tom]
+  return (
+    <div
+      role="progressbar"
+      aria-valuenow={percentual}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100"
+    >
+      <div className={`h-full rounded-full ${cor}`} style={{ width: `${percentual}%` }} />
+    </div>
+  )
+}
+
 const TONS = {
   neutro: 'bg-zinc-100 text-zinc-700',
   atencao: 'bg-amber-100 text-amber-800',
