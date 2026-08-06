@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { ufsParaSelecao } from '@/dominio/estados'
+import { mascararDocumento, mascararTelefone } from '@/dominio/mascaras'
 import { type Cliente } from '@/lib/tipos'
 import {
   classeBotaoPerigo,
@@ -12,35 +13,6 @@ import {
   MensagemErro,
 } from '@/componentes/ui'
 import { arquivarCliente, salvarCliente, type EstadoFormularioCliente } from './acoes'
-
-/** Máscara visual de telefone: (82) 99999-0000 enquanto digita. */
-function mascararTelefone(valor: string): string {
-  const digitos = valor.replace(/\D/g, '').slice(0, 11)
-  if (digitos.length <= 2) {
-    return digitos
-  }
-  if (digitos.length <= 6) {
-    return `(${digitos.slice(0, 2)}) ${digitos.slice(2)}`
-  }
-  const corte = digitos.length === 11 ? 7 : 6
-  return `(${digitos.slice(0, 2)}) ${digitos.slice(2, corte)}-${digitos.slice(corte)}`
-}
-
-/** Máscara visual de CPF/CNPJ conforme o tamanho. */
-function mascararDocumento(valor: string): string {
-  const digitos = valor.replace(/\D/g, '').slice(0, 14)
-  if (digitos.length <= 11) {
-    return digitos
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
-      .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4')
-  }
-  return digitos
-    .replace(/(\d{2})(\d)/, '$1.$2')
-    .replace(/(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-    .replace(/(\d{2})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3/$4')
-    .replace(/(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, '$1.$2.$3/$4-$5')
-}
 
 export function FormularioCliente({ cliente }: { cliente?: Cliente }) {
   const [estado, acao, pendente] = useActionState<EstadoFormularioCliente, FormData>(

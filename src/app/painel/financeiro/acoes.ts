@@ -147,6 +147,7 @@ export async function criarCategoria(
   }
 
   revalidatePath('/painel/financeiro')
+  revalidatePath('/painel/cadastros')
   return { criadaId: (data as { id: string }).id }
 }
 
@@ -162,4 +163,5 @@ export async function arquivarCategoria(dados: FormData): Promise<void> {
     .update({ archived_at: new Date().toISOString() })
     .eq('id', id)
   revalidatePath('/painel/financeiro')
+  revalidatePath('/painel/cadastros')
 }

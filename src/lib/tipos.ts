@@ -8,6 +8,7 @@ import { type CondicaoPagamento, type StatusVenda } from '@/dominio/venda'
 export interface Organizacao {
   id: string
   name: string
+  whatsapp: string | null
 }
 
 export interface Cliente {

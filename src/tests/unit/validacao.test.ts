@@ -3,6 +3,7 @@ import {
   errosPorCampo,
   esquemaCliente,
   esquemaDespesa,
+  esquemaOrganizacao,
   esquemaPedidoCatalogo,
   esquemaProduto,
 } from '@/dominio/validacao'
@@ -170,5 +171,27 @@ describe('errosPorCampo', () => {
       expect(erros.cidade).toBeDefined()
       expect(erros.uf).toBeDefined()
     }
+  })
+})
+
+describe('esquemaOrganizacao', () => {
+  it('aceita nome e normaliza o WhatsApp para dígitos', () => {
+    const resultado = esquemaOrganizacao.safeParse({
+      nome: 'Allow Beauty Hair',
+      whatsapp: '(82) 99999-0000',
+    })
+    expect(resultado.success).toBe(true)
+    if (resultado.success) {
+      expect(resultado.data.whatsapp).toBe('82999990000')
+    }
+  })
+
+  it('aceita WhatsApp vazio como ausente e recusa número sem DDD', () => {
+    const semNumero = esquemaOrganizacao.safeParse({ nome: 'Allow', whatsapp: '' })
+    expect(semNumero.success).toBe(true)
+    if (semNumero.success) {
+      expect(semNumero.data.whatsapp).toBeUndefined()
+    }
+    expect(esquemaOrganizacao.safeParse({ nome: 'Allow', whatsapp: '999' }).success).toBe(false)
   })
 })

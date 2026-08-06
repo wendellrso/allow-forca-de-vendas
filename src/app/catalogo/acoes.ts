@@ -49,8 +49,11 @@ export async function fecharPedido(
 
   const supabase = criarClienteAdministrativo()
 
-  const { data: organizacoes } = await supabase.from('organizations').select('id').limit(2)
-  const organizacao = (organizacoes ?? [])[0] as { id: string } | undefined
+  const { data: organizacoes } = await supabase
+    .from('organizations')
+    .select('id, whatsapp')
+    .limit(2)
+  const organizacao = (organizacoes ?? [])[0] as { id: string; whatsapp: string | null } | undefined
   if (organizacao === undefined || (organizacoes ?? []).length > 1) {
     return { erros: { geral: 'O catálogo está indisponível no momento.' } }
   }
@@ -107,7 +110,7 @@ export async function fecharPedido(
     totalCentavos,
     observacao: pedido.observacao,
   })
-  const numeroDaVendedora = whatsappDaVendedora()
+  const numeroDaVendedora = organizacao.whatsapp ?? whatsappDaVendedora()
   if (numeroDaVendedora === null) {
     return {
       erros: { geral: 'O catálogo está com o WhatsApp mal configurado. Avise a vendedora.' },

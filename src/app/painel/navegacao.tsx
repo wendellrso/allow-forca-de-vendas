@@ -6,11 +6,11 @@ import { type ComponentType, type SVGProps } from 'react'
 import { sair } from '@/lib/acoes-auth'
 import { MarcaAllow } from '@/componentes/marca'
 import {
+  IconeCadastros,
   IconeCatalogo,
-  IconeClientes,
+  IconeConfiguracoes,
   IconeFinanceiro,
   IconeInicio,
-  IconeProdutos,
   IconeRelatorios,
   IconeSair,
   IconeVendas,
@@ -27,13 +27,19 @@ interface ItemDeNavegacao {
   icone: ComponentType<SVGProps<SVGSVGElement>>
   exato?: boolean
   contador?: keyof ContadoresDaNavegacao
+  /** Outras rotas que acendem este item — subpáginas agrupadas nele. */
+  tambem?: string[]
 }
 
 const ITENS: ItemDeNavegacao[] = [
   { rota: '/painel', rotulo: 'Início', icone: IconeInicio, exato: true },
   { rota: '/painel/vendas', rotulo: 'Vendas', icone: IconeVendas, contador: 'pedidosAguardando' },
-  { rota: '/painel/clientes', rotulo: 'Clientes', icone: IconeClientes },
-  { rota: '/painel/produtos', rotulo: 'Produtos', icone: IconeProdutos },
+  {
+    rota: '/painel/cadastros',
+    rotulo: 'Cadastros',
+    icone: IconeCadastros,
+    tambem: ['/painel/clientes', '/painel/produtos'],
+  },
   {
     rota: '/painel/financeiro',
     rotulo: 'Financeiro',
@@ -42,12 +48,17 @@ const ITENS: ItemDeNavegacao[] = [
   },
   { rota: '/painel/relatorios', rotulo: 'Relatórios', icone: IconeRelatorios },
   { rota: '/catalogo', rotulo: 'Catálogo', icone: IconeCatalogo },
+  { rota: '/painel/configuracoes', rotulo: 'Configurações', icone: IconeConfiguracoes },
 ]
 
 const ITENS_DO_CELULAR = ITENS.slice(0, 5)
 
-function itemAtivo(rota: string, exato: boolean | undefined, caminho: string): boolean {
-  return exato === true ? caminho === rota : caminho.startsWith(rota)
+function itemAtivo(item: ItemDeNavegacao, caminho: string): boolean {
+  if (item.exato === true) {
+    return caminho === item.rota
+  }
+  const rotas = [item.rota, ...(item.tambem ?? [])]
+  return rotas.some((rota) => caminho.startsWith(rota))
 }
 
 function Contador({ quantidade }: { quantidade: number }) {
@@ -78,7 +89,7 @@ export function BarraLateral({
       </div>
       <nav aria-label="Seções do painel" className="mt-5 grid gap-1">
         {ITENS.map((item) => {
-          const ativo = itemAtivo(item.rota, item.exato, caminho)
+          const ativo = itemAtivo(item, caminho)
           const Icone = item.icone
           return (
             <Link
@@ -127,15 +138,24 @@ export function BarraSuperiorMovel() {
             Beauty Hair
           </span>
         </Link>
-        <form action={sair}>
-          <button
-            type="submit"
-            className="text-marca-100/80 p-1 text-sm hover:text-white"
-            aria-label="Sair"
+        <div className="flex items-center gap-1">
+          <Link
+            href="/painel/configuracoes"
+            className="text-marca-100/80 p-1 hover:text-white"
+            aria-label="Configurações"
           >
-            <IconeSair />
-          </button>
-        </form>
+            <IconeConfiguracoes />
+          </Link>
+          <form action={sair}>
+            <button
+              type="submit"
+              className="text-marca-100/80 p-1 text-sm hover:text-white"
+              aria-label="Sair"
+            >
+              <IconeSair />
+            </button>
+          </form>
+        </div>
       </div>
     </header>
   )
@@ -152,7 +172,7 @@ export function BarraInferiorMovel({ contadores }: { contadores: ContadoresDaNav
     >
       <div className="grid grid-cols-5">
         {ITENS_DO_CELULAR.map((item) => {
-          const ativo = itemAtivo(item.rota, item.exato, caminho)
+          const ativo = itemAtivo(item, caminho)
           const Icone = item.icone
           const quantidade = item.contador !== undefined ? contadores[item.contador] : 0
           return (

@@ -25,8 +25,9 @@ export function ambienteServidor() {
 }
 
 /**
- * Número que recebe os pedidos do catálogo. Ausente, o catálogo continua
- * visível — só o fechamento do pedido é que depende dele.
+ * Reserva de emergência para o número que recebe os pedidos do catálogo.
+ * A fonte principal é o campo whatsapp da Organização (tela de
+ * Configurações); esta variável só vale quando o campo está vazio.
  */
 export function whatsappDaVendedora(): string | null {
   const numero = process.env.ALLOW_WHATSAPP_VENDEDORA

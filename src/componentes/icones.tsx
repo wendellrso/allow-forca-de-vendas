@@ -92,6 +92,32 @@ export function IconeCatalogo(props: SVGProps<SVGSVGElement>) {
   )
 }
 
+export function IconeCadastros(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Base {...props}>
+      <path d="M4 7h16v13H4z" />
+      <path d="M4 7l2-3h12l2 3" />
+      <path d="M9 11h6" />
+    </Base>
+  )
+}
+
+export function IconeConfiguracoes(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Base {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3" />
+      <path d="M12 19v3" />
+      <path d="M2 12h3" />
+      <path d="M19 12h3" />
+      <path d="M4.9 4.9l2.2 2.2" />
+      <path d="M16.9 16.9l2.2 2.2" />
+      <path d="M19.1 4.9l-2.2 2.2" />
+      <path d="M7.1 16.9l-2.2 2.2" />
+    </Base>
+  )
+}
+
 export function IconeSair(props: SVGProps<SVGSVGElement>) {
   return (
     <Base {...props}>

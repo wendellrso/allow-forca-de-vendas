@@ -134,6 +134,13 @@ export const esquemaDespesa = z.object({
 
 export type DadosDespesa = z.infer<typeof esquemaDespesa>
 
+export const esquemaOrganizacao = z.object({
+  nome,
+  whatsapp: telefone.optional().or(z.literal('').transform(() => undefined)),
+})
+
+export type DadosOrganizacao = z.infer<typeof esquemaOrganizacao>
+
 export const esquemaCategoriaDeDespesa = z.object({
   nome: z
     .string()
@@ -141,6 +148,9 @@ export const esquemaCategoriaDeDespesa = z.object({
     .min(2, 'O nome precisa de pelo menos 2 letras.')
     .max(40, 'Use no máximo 40 letras.'),
 })
+
+/** Mesma regra da categoria: nome curto, único por Organização (no banco). */
+export const esquemaFormaDePagamento = esquemaCategoriaDeDespesa
 
 /**
  * Traduz o resultado de um parse do zod para o formato de erro exibido nos
