@@ -12,6 +12,7 @@ import {
 } from '@/componentes/ui'
 import { cancelarVenda, confirmarVenda, entregarVenda, type EstadoAcaoVenda } from '../acoes'
 
+/** Ações que movem o pedido adiante: confirmar (com pagamento) e entregar. */
 export function AcoesDaVenda({ vendaId, status }: { vendaId: string; status: StatusVenda }) {
   const [estadoConfirmar, acaoConfirmar, confirmando] = useActionState<EstadoAcaoVenda, FormData>(
     confirmarVenda,
@@ -21,30 +22,22 @@ export function AcoesDaVenda({ vendaId, status }: { vendaId: string; status: Sta
     entregarVenda,
     {},
   )
-  const [estadoCancelar, acaoCancelar, cancelando] = useActionState<EstadoAcaoVenda, FormData>(
-    cancelarVenda,
-    {},
-  )
   const [condicao, definirCondicao] = useState('a_vista')
-  const [confirmandoCancelamento, definirConfirmandoCancelamento] = useState(false)
 
   if (status === 'entregue' || status === 'cancelada') {
     return null
   }
 
   return (
-    <div className="space-y-4">
-      <MensagemErro mensagem={estadoConfirmar.erro ?? estadoEntregar.erro ?? estadoCancelar.erro} />
+    <div className="border-marca-100 bg-marca-50/60 rounded-xl border p-4">
+      <MensagemErro mensagem={estadoConfirmar.erro ?? estadoEntregar.erro} />
 
       {status === 'aguardando_confirmacao' ? (
-        <form
-          action={acaoConfirmar}
-          className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4"
-        >
-          <input type="hidden" name="vendaId" value={vendaId} />
-          <p className="font-medium text-zinc-800">
-            Confirmar a venda baixa o estoque e cria o contas a receber.
+        <form action={acaoConfirmar} className="space-y-3">
+          <p className="text-sm font-semibold text-zinc-800">
+            Próximo passo: confirmar o pedido — o estoque baixa e o contas a receber é criado.
           </p>
+          <input type="hidden" name="vendaId" value={vendaId} />
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="condicao" className={classeRotulo}>
@@ -77,25 +70,39 @@ export function AcoesDaVenda({ vendaId, status }: { vendaId: string; status: Sta
             ) : null}
           </div>
           <button type="submit" disabled={confirmando} className={classeBotaoPrimario}>
-            {confirmando ? 'Confirmando…' : 'Confirmar venda'}
+            {confirmando ? 'Confirmando…' : 'Confirmar pedido'}
           </button>
         </form>
-      ) : null}
-
-      {status === 'confirmada' ? (
-        <form action={acaoEntregar}>
+      ) : (
+        <form action={acaoEntregar} className="flex flex-wrap items-center gap-3">
+          <p className="flex-1 text-sm font-semibold text-zinc-800">
+            Próximo passo: marcar como entregue quando o pedido chegar ao cliente.
+          </p>
           <input type="hidden" name="vendaId" value={vendaId} />
           <button type="submit" disabled={entregando} className={classeBotaoPrimario}>
             {entregando ? 'Registrando…' : 'Marcar como entregue'}
           </button>
         </form>
-      ) : null}
+      )}
+    </div>
+  )
+}
 
-      {confirmandoCancelamento ? (
-        <form
-          action={acaoCancelar}
-          className="space-y-3 rounded-xl border border-red-200 bg-red-50 p-4"
-        >
+/** Cancelamento, isolado do fluxo feliz e com confirmação em duas etapas. */
+export function ZonaDeRisco({ vendaId, status }: { vendaId: string; status: StatusVenda }) {
+  const [estado, acao, cancelando] = useActionState<EstadoAcaoVenda, FormData>(cancelarVenda, {})
+  const [confirmando, definirConfirmando] = useState(false)
+
+  if (status === 'entregue' || status === 'cancelada') {
+    return null
+  }
+
+  return (
+    <div className="mt-8 rounded-xl border border-red-200 p-4">
+      <p className="text-sm font-bold text-red-800">Zona de risco</p>
+      <MensagemErro mensagem={estado.erro} />
+      {confirmando ? (
+        <form action={acao} className="mt-2 space-y-3">
           <input type="hidden" name="vendaId" value={vendaId} />
           <p className="text-sm text-red-800">
             {status === 'confirmada'
@@ -114,7 +121,7 @@ export function AcoesDaVenda({ vendaId, status }: { vendaId: string; status: Sta
             </button>
             <button
               type="button"
-              onClick={() => definirConfirmandoCancelamento(false)}
+              onClick={() => definirConfirmando(false)}
               className={classeBotaoSecundario}
             >
               Voltar
@@ -124,10 +131,10 @@ export function AcoesDaVenda({ vendaId, status }: { vendaId: string; status: Sta
       ) : (
         <button
           type="button"
-          onClick={() => definirConfirmandoCancelamento(true)}
-          className="text-sm font-medium text-red-600 hover:text-red-800"
+          onClick={() => definirConfirmando(true)}
+          className="mt-1 text-sm font-medium text-red-600 hover:text-red-800"
         >
-          Cancelar venda
+          Cancelar esta venda…
         </button>
       )}
     </div>
