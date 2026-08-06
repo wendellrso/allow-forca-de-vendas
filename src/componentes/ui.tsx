@@ -8,7 +8,7 @@ export const classeEntrada =
 export const classeRotulo = 'mb-1 block text-sm font-medium text-zinc-700'
 
 export const classeBotaoPrimario =
-  'inline-flex w-full items-center justify-center rounded-lg bg-marca-700 px-4 py-2.5 text-base font-semibold text-white hover:bg-marca-800 focus:ring-2 focus:ring-marca-100 focus:outline-none disabled:opacity-60 sm:w-auto'
+  'inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-br from-marca-600 to-marca-800 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-marca-800/20 hover:brightness-110 focus:ring-2 focus:ring-marca-100 focus:outline-none disabled:opacity-60 sm:w-auto'
 
 export const classeBotaoSecundario =
   'inline-flex w-full items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-base font-medium text-zinc-700 hover:bg-zinc-100 focus:ring-2 focus:ring-zinc-200 focus:outline-none disabled:opacity-60 sm:w-auto'
@@ -18,10 +18,21 @@ export const classeBotaoPerigo =
 
 export const classeCartao = 'rounded-xl border border-zinc-200 bg-white p-4 shadow-sm'
 
-export function TituloPagina({ titulo, acao }: { titulo: string; acao?: ReactNode }) {
+export function TituloPagina({
+  titulo,
+  subtitulo,
+  acao,
+}: {
+  titulo: string
+  subtitulo?: string
+  acao?: ReactNode
+}) {
   return (
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <h1 className="text-xl font-bold text-zinc-900">{titulo}</h1>
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 className="font-marca text-3xl font-bold text-zinc-900">{titulo}</h1>
+        {subtitulo !== undefined ? <p className="mt-1 text-sm text-zinc-500">{subtitulo}</p> : null}
+      </div>
       {acao}
     </div>
   )

@@ -1,10 +1,12 @@
 import Link from 'next/link'
 import { headers } from 'next/headers'
+import { type ComponentType, type SVGProps } from 'react'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { formatarCentavos } from '@/dominio/dinheiro'
 import { type Produto, type Venda } from '@/lib/tipos'
 import { classeCartao, TituloPagina } from '@/componentes/ui'
 import { CompartilharCatalogo } from '@/componentes/compartilhar-catalogo'
+import { IconeFinanceiro, IconeProdutos, IconeRelatorios, IconeVendas } from '@/componentes/icones'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,55 +48,98 @@ export default async function PaginaInicio() {
     (produto) => produto.min_stock !== null && produto.stock_quantity <= produto.min_stock,
   )
 
-  const cartoes = [
+  interface Cartao {
+    rotulo: string
+    valor: string
+    rota: string
+    icone: ComponentType<SVGProps<SVGSVGElement>>
+    alerta?: boolean
+  }
+
+  const cartoes: Cartao[] = [
     {
-      rotulo: 'Pedidos aguardando confirmação',
+      rotulo: 'Vendas do mês',
+      valor: formatarCentavos(totalMes),
+      rota: '/painel/relatorios',
+      icone: IconeRelatorios,
+    },
+    {
+      rotulo: 'Pedidos aguardando',
       valor: String(aguardando.count ?? 0),
       rota: '/painel/vendas?status=aguardando_confirmacao',
+      icone: IconeVendas,
+      alerta: (aguardando.count ?? 0) > 0,
     },
-    { rotulo: 'Vendas do mês', valor: formatarCentavos(totalMes), rota: '/painel/relatorios' },
     {
       rotulo: 'A receber em aberto',
       valor: formatarCentavos(aReceber),
       rota: '/painel/financeiro',
+      icone: IconeFinanceiro,
     },
     {
-      rotulo: 'Produtos com estoque baixo',
+      rotulo: 'Estoque baixo',
       valor: String(estoqueBaixo.length),
-      rota: '/painel/produtos',
+      rota: '/painel/produtos?ordenar=stock_quantity&dir=asc',
+      icone: IconeProdutos,
+      alerta: estoqueBaixo.length > 0,
     },
   ]
 
   return (
     <div>
-      <TituloPagina titulo="Início" />
-      <div className={`${classeCartao} mb-4`}>
-        <p className="mb-2 font-bold text-zinc-900">Catálogo dos clientes</p>
-        <p className="mb-3 text-sm text-zinc-500">
-          Mande este link para seus clientes: eles escolhem os produtos e o pedido chega no seu
-          WhatsApp.
-        </p>
-        <CompartilharCatalogo url={urlDoCatalogo} />
+      <TituloPagina titulo="Início" subtitulo="O resumo do seu dia de vendas." />
+      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {cartoes.map((cartao) => {
+          const Icone = cartao.icone
+          return (
+            <Link
+              key={cartao.rotulo}
+              href={cartao.rota}
+              className={`${classeCartao} hover:border-marca-600 block transition-colors`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="bg-marca-50 text-marca-700 grid h-9 w-9 place-items-center rounded-xl">
+                  <Icone />
+                </span>
+                {cartao.alerta === true ? (
+                  <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                    atenção
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-3 text-2xl font-bold text-zinc-900">{cartao.valor}</p>
+              <p className="mt-0.5 text-xs text-zinc-500">{cartao.rotulo}</p>
+            </Link>
+          )
+        })}
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {cartoes.map((cartao) => (
-          <Link
-            key={cartao.rotulo}
-            href={cartao.rota}
-            className={`${classeCartao} hover:border-marca-600 block`}
-          >
-            <p className="text-sm text-zinc-500">{cartao.rotulo}</p>
-            <p className="mt-1 text-2xl font-bold text-zinc-900">{cartao.valor}</p>
-          </Link>
-        ))}
-      </div>
-      {estoqueBaixo.length > 0 ? (
-        <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-medium text-amber-800">
-            Estoque baixo: {estoqueBaixo.map((produto) => produto.name).join(', ')}.
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className={classeCartao}>
+          <p className="mb-2 font-bold text-zinc-900">Catálogo dos clientes</p>
+          <p className="mb-3 text-sm text-zinc-500">
+            Mande este link para seus clientes: eles escolhem os produtos e o pedido chega no seu
+            WhatsApp.
           </p>
+          <CompartilharCatalogo url={urlDoCatalogo} />
         </div>
-      ) : null}
+
+        {estoqueBaixo.length > 0 ? (
+          <div className={classeCartao}>
+            <p className="mb-2 font-bold text-zinc-900">Reposição de estoque</p>
+            <ul className="space-y-1.5">
+              {estoqueBaixo.slice(0, 6).map((produto) => (
+                <li key={produto.name} className="flex justify-between text-sm">
+                  <span className="text-zinc-600">{produto.name}</span>
+                  <span className="font-semibold text-amber-700">
+                    {produto.stock_quantity} restando
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }
