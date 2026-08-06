@@ -45,6 +45,7 @@ export async function registrarRecebimento(
 
 export interface EstadoDespesa {
   erros?: Record<string, string>
+  sucesso?: boolean
 }
 
 export async function salvarDespesa(
@@ -90,7 +91,7 @@ export async function salvarDespesa(
   }
 
   revalidatePath('/painel/financeiro')
-  return {}
+  return { sucesso: true }
 }
 
 export async function marcarDespesaPaga(dados: FormData): Promise<void> {

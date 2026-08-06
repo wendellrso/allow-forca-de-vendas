@@ -1,8 +1,9 @@
 'use client'
 
-import { useActionState, useRef, useState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import { ufsParaSelecao } from '@/dominio/estados'
 import { type CategoriaDeDespesa } from '@/lib/tipos'
+import { Modal } from '@/componentes/modal'
 import {
   classeBotaoPrimario,
   classeBotaoSecundario,
@@ -56,7 +57,13 @@ export function FormularioRecebimento({ contaId }: { contaId: string }) {
   )
 }
 
-export function FormularioDespesa({ categorias }: { categorias: CategoriaDeDespesa[] }) {
+export function FormularioDespesa({
+  categorias,
+  aoSalvar,
+}: {
+  categorias: CategoriaDeDespesa[]
+  aoSalvar?: () => void
+}) {
   const [estado, acao, pendente] = useActionState<EstadoDespesa, FormData>(salvarDespesa, {})
   const [estadoCategoria, acaoCategoria, criandoCategoria] = useActionState<
     EstadoCategoria,
@@ -76,6 +83,13 @@ export function FormularioDespesa({ categorias }: { categorias: CategoriaDeDespe
     definirCategoriaEscolhida(estadoCategoria.criadaId)
     definirCriandoNova(false)
   }
+
+  // Despesa salva: avisa quem abriu o formulário (a janela fecha).
+  useEffect(() => {
+    if (estado.sucesso === true) {
+      aoSalvar?.()
+    }
+  }, [estado, aoSalvar])
 
   return (
     <div>
@@ -269,36 +283,72 @@ export function BotoesDespesa({ despesaId, aPagar }: { despesaId: string; aPagar
   )
 }
 
-export function GerenciarCategorias({ categorias }: { categorias: CategoriaDeDespesa[] }) {
+/** Botão que abre a janela de nova despesa — nada de seções escondidas na página. */
+export function BotaoNovaDespesa({ categorias }: { categorias: CategoriaDeDespesa[] }) {
+  const [aberto, definirAberto] = useState(false)
+
   return (
-    <details className="mt-3">
-      <summary className="cursor-pointer text-sm font-medium text-zinc-500 select-none">
-        Gerenciar categorias ({categorias.length})
-      </summary>
-      <ul className="mt-2 flex flex-wrap gap-1.5">
-        {categorias.map((categoria) => (
-          <li
-            key={categoria.id}
-            className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white py-1 pr-1.5 pl-3 text-sm text-zinc-700"
-          >
-            {categoria.name}
-            <form action={arquivarCategoria} className="grid">
-              <input type="hidden" name="id" value={categoria.id} />
-              <button
-                type="submit"
-                aria-label={`Arquivar a categoria ${categoria.name}`}
-                title="Arquivar"
-                className="grid h-5 w-5 place-items-center rounded-full text-xs text-zinc-400 hover:bg-red-50 hover:text-red-700"
+    <>
+      <button
+        type="button"
+        onClick={() => definirAberto(true)}
+        className={`${classeBotaoPrimario} w-auto`}
+      >
+        + Nova despesa
+      </button>
+      <Modal aberto={aberto} aoFechar={() => definirAberto(false)} titulo="Nova despesa">
+        <FormularioDespesa categorias={categorias} aoSalvar={() => definirAberto(false)} />
+      </Modal>
+    </>
+  )
+}
+
+/** Botão que abre a janela de categorias de despesa. */
+export function BotaoCategorias({ categorias }: { categorias: CategoriaDeDespesa[] }) {
+  const [aberto, definirAberto] = useState(false)
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => definirAberto(true)}
+        className={`${classeBotaoSecundario} w-auto`}
+      >
+        Categorias ({categorias.length})
+      </button>
+      <Modal aberto={aberto} aoFechar={() => definirAberto(false)} titulo="Categorias de despesa">
+        {categorias.length === 0 ? (
+          <p className="text-sm text-zinc-500">
+            Nenhuma categoria ainda. Crie a primeira ao registrar uma despesa.
+          </p>
+        ) : (
+          <ul className="flex flex-wrap gap-1.5">
+            {categorias.map((categoria) => (
+              <li
+                key={categoria.id}
+                className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white py-1 pr-1.5 pl-3 text-sm text-zinc-700"
               >
-                ✕
-              </button>
-            </form>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-1.5 text-xs text-zinc-400">
-        Arquivar tira a categoria das novas despesas; as antigas continuam com ela.
-      </p>
-    </details>
+                {categoria.name}
+                <form action={arquivarCategoria} className="grid">
+                  <input type="hidden" name="id" value={categoria.id} />
+                  <button
+                    type="submit"
+                    aria-label={`Arquivar a categoria ${categoria.name}`}
+                    title="Arquivar"
+                    className="grid h-5 w-5 place-items-center rounded-full text-xs text-zinc-400 hover:bg-red-50 hover:text-red-700"
+                  >
+                    ✕
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-3 text-xs text-zinc-400">
+          Arquivar tira a categoria das novas despesas; as antigas continuam com ela. Para criar uma
+          categoria, use “+ Nova categoria” dentro da nova despesa.
+        </p>
+      </Modal>
+    </>
   )
 }

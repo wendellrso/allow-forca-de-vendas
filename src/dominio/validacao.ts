@@ -67,6 +67,21 @@ export const esquemaProduto = z.object({
     .transform((valor) => valor.replace(/\D/g, ''))
     .refine((digitos) => digitos === '' || digitos.length === 8, 'O NCM tem 8 dígitos.')
     .optional(),
+  custoCentavos: z
+    .number()
+    .int('O custo precisa ser um valor em centavos.')
+    .min(0, 'O custo não pode ser negativo.')
+    .max(100_000_000, 'Custo acima do limite do aplicativo.')
+    .optional(),
+  codigoBarras: z
+    .string()
+    .trim()
+    .transform((valor) => valor.replace(/\D/g, ''))
+    .refine(
+      (digitos) => digitos === '' || (digitos.length >= 8 && digitos.length <= 14),
+      'O código de barras tem de 8 a 14 dígitos.',
+    )
+    .optional(),
   estoqueMinimo: z
     .number()
     .int('Use um número inteiro.')

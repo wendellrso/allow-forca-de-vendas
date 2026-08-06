@@ -23,6 +23,16 @@ export async function salvarProduto(
     return { erros: { preco: 'Informe um preço válido, ex.: 49,90.' } }
   }
 
+  const custoTexto = String(dados.get('custo') ?? '').trim()
+  let custoCentavos: number | undefined
+  if (custoTexto !== '') {
+    const convertido = converterParaCentavos(custoTexto)
+    if (convertido === null) {
+      return { erros: { custo: 'Informe um custo válido, ex.: 25,00.' } }
+    }
+    custoCentavos = convertido
+  }
+
   const estoqueMinimoTexto = String(dados.get('estoqueMinimo') ?? '').trim()
   const estoqueMinimo = estoqueMinimoTexto === '' ? undefined : Number(estoqueMinimoTexto)
 
@@ -30,6 +40,8 @@ export async function salvarProduto(
     nome: dados.get('nome'),
     descricao: dados.get('descricao') ?? '',
     precoCentavos,
+    custoCentavos,
+    codigoBarras: dados.get('codigoBarras') ?? '',
     unidade: dados.get('unidade') ?? 'un',
     ncm: dados.get('ncm') ?? '',
     estoqueMinimo,
@@ -62,6 +74,11 @@ export async function salvarProduto(
     description:
       produto.descricao === '' || produto.descricao === undefined ? null : produto.descricao,
     price_cents: produto.precoCentavos,
+    cost_cents: produto.custoCentavos ?? null,
+    barcode:
+      produto.codigoBarras === '' || produto.codigoBarras === undefined
+        ? null
+        : produto.codigoBarras,
     unit: produto.unidade,
     ncm: produto.ncm === '' || produto.ncm === undefined ? null : produto.ncm,
     min_stock: produto.estoqueMinimo ?? null,

@@ -12,8 +12,21 @@ import {
 } from '@/componentes/ui'
 import { cancelarVenda, confirmarVenda, entregarVenda, type EstadoAcaoVenda } from '../acoes'
 
+interface FormaOpcao {
+  id: string
+  name: string
+}
+
 /** Ações que movem o pedido adiante: confirmar (com pagamento) e entregar. */
-export function AcoesDaVenda({ vendaId, status }: { vendaId: string; status: StatusVenda }) {
+export function AcoesDaVenda({
+  vendaId,
+  status,
+  formas,
+}: {
+  vendaId: string
+  status: StatusVenda
+  formas: FormaOpcao[]
+}) {
   const [estadoConfirmar, acaoConfirmar, confirmando] = useActionState<EstadoAcaoVenda, FormData>(
     confirmarVenda,
     {},
@@ -38,10 +51,10 @@ export function AcoesDaVenda({ vendaId, status }: { vendaId: string; status: Sta
             Próximo passo: confirmar o pedido — o estoque baixa e o contas a receber é criado.
           </p>
           <input type="hidden" name="vendaId" value={vendaId} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <div>
               <label htmlFor="condicao" className={classeRotulo}>
-                Pagamento *
+                Condição *
               </label>
               <select
                 id="condicao"
@@ -52,6 +65,19 @@ export function AcoesDaVenda({ vendaId, status }: { vendaId: string; status: Sta
               >
                 <option value="a_vista">À vista</option>
                 <option value="a_prazo">A prazo</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="formaId" className={classeRotulo}>
+                Forma
+              </label>
+              <select id="formaId" name="formaId" defaultValue="" className={classeEntrada}>
+                <option value="">Escolha…</option>
+                {formas.map((forma) => (
+                  <option key={forma.id} value={forma.id}>
+                    {forma.name}
+                  </option>
+                ))}
               </select>
             </div>
             {condicao === 'a_prazo' ? (

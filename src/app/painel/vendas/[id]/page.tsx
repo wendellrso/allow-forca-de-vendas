@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { formatarCentavos } from '@/dominio/dinheiro'
 import { ROTULO_CONDICAO, ROTULO_STATUS } from '@/dominio/venda'
-import { type ContaAReceber, type ItemVenda, type Venda } from '@/lib/tipos'
+import { type ContaAReceber, type FormaDePagamento, type ItemVenda, type Venda } from '@/lib/tipos'
 import { BarraDeProgresso, classeCartao, Distintivo } from '@/componentes/ui'
 import { Avatar } from '@/componentes/avatar'
 import { TimelineDoPedido, type EtapaDaTimeline } from '@/componentes/timeline'
@@ -48,17 +48,28 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
   const { id } = await params
   const supabase = await criarClienteServidor()
 
-  const [{ data: linhaVenda }, { data: linhasItens }, { data: linhasContas }] = await Promise.all([
-    supabase.from('sales').select('*').eq('id', id).maybeSingle(),
+  const [
+    { data: linhaVenda },
+    { data: linhasItens },
+    { data: linhasContas },
+    { data: linhasFormas },
+  ] = await Promise.all([
+    supabase.from('sales').select('*, payment_methods(name)').eq('id', id).maybeSingle(),
     supabase
       .from('sale_items')
       .select('*, products(image_url)')
       .eq('sale_id', id)
       .order('product_name'),
     supabase.from('receivables').select('*').eq('sale_id', id),
+    supabase
+      .from('payment_methods')
+      .select('id, name, archived_at')
+      .is('archived_at', null)
+      .order('name'),
   ])
 
-  const venda = linhaVenda as Venda | null
+  const venda = linhaVenda as (Venda & { payment_methods: { name: string } | null }) | null
+  const formas = (linhasFormas ?? []) as FormaDePagamento[]
   if (venda === null) {
     notFound()
   }
@@ -98,7 +109,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
       </div>
 
       <div className="mb-4">
-        <AcoesDaVenda vendaId={venda.id} status={venda.status} />
+        <AcoesDaVenda vendaId={venda.id} status={venda.status} formas={formas} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[7fr_5fr]">
@@ -151,6 +162,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
                 {venda.payment_terms !== null ? (
                   <span className="text-xs text-zinc-500">
                     {ROTULO_CONDICAO[venda.payment_terms]}
+                    {venda.payment_methods !== null ? ` · ${venda.payment_methods.name}` : ''}
                     {venda.due_date !== null
                       ? ` · vence ${new Date(`${venda.due_date}T12:00:00`).toLocaleDateString('pt-BR')}`
                       : ''}

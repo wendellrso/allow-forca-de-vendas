@@ -69,6 +69,8 @@ export async function criarVendaManual(
     return { erro: 'Venda a prazo precisa da data de vencimento.' }
   }
 
+  const formaId = String(dados.get('formaId') ?? '')
+
   const supabase = await criarClienteServidor()
   const { data, error } = await supabase.rpc('criar_venda_manual', {
     p_organization: sessao.organizacaoId,
@@ -77,6 +79,7 @@ export async function criarVendaManual(
     p_condicao: condicao,
     p_vencimento: condicao === 'a_prazo' ? vencimento : null,
     p_note: observacao === '' ? null : observacao,
+    p_forma: formaId === '' ? null : formaId,
   })
 
   if (error !== null) {
@@ -104,11 +107,14 @@ export async function confirmarVenda(
     return { erro: 'Venda a prazo precisa da data de vencimento.' }
   }
 
+  const formaId = String(dados.get('formaId') ?? '')
+
   const supabase = await criarClienteServidor()
   const { error } = await supabase.rpc('confirmar_venda', {
     p_venda: vendaId,
     p_condicao: condicao,
     p_vencimento: condicao === 'a_prazo' ? vencimento : null,
+    p_forma: formaId === '' ? null : formaId,
   })
 
   if (error !== null) {

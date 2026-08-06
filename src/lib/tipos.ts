@@ -37,6 +37,8 @@ export interface Produto {
   min_stock: number | null
   active: boolean
   image_url: string | null
+  cost_cents: number | null
+  barcode: string | null
   created_at: string
 }
 
@@ -60,6 +62,7 @@ export interface Venda {
   origin: 'catalogo' | 'manual'
   status: StatusVenda
   payment_terms: CondicaoPagamento | null
+  payment_method_id: string | null
   due_date: string | null
   total_cents: number
   note: string | null
@@ -104,6 +107,12 @@ export interface Despesa {
 }
 
 export interface CategoriaDeDespesa {
+  id: string
+  name: string
+  archived_at: string | null
+}
+
+export interface FormaDePagamento {
   id: string
   name: string
   archived_at: string | null

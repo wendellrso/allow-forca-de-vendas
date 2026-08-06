@@ -48,6 +48,11 @@ export default async function PaginaProduto({ params }: { params: Promise<{ id: 
           <h1 className="font-marca text-2xl font-bold text-zinc-900">{produto.name}</h1>
           <p className="text-sm text-zinc-500">
             {formatarCentavos(produto.price_cents)} / {produto.unit}
+            {produto.cost_cents !== null && produto.price_cents > 0
+              ? ` · custo ${formatarCentavos(produto.cost_cents)} · margem ${Math.round(
+                  ((produto.price_cents - produto.cost_cents) / produto.price_cents) * 100,
+                )}%`
+              : ''}
           </p>
         </div>
         <Distintivo tom={!produto.active ? 'perigo' : estoqueBaixo ? 'atencao' : 'sucesso'}>

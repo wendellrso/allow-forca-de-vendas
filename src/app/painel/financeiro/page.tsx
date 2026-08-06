@@ -20,10 +20,10 @@ import {
   LinhaDaTabela,
 } from '@/componentes/tabela'
 import {
+  BotaoCategorias,
+  BotaoNovaDespesa,
   BotoesDespesa,
-  FormularioDespesa,
   FormularioRecebimento,
-  GerenciarCategorias,
 } from './formularios'
 
 export const dynamic = 'force-dynamic'
@@ -47,7 +47,7 @@ function hojeIso(): string {
 export default async function PaginaFinanceiro({
   searchParams,
 }: {
-  searchParams: Promise<{ aba?: string; ordenar?: string; dir?: string }>
+  searchParams: Promise<{ aba?: string; ver?: string; ordenar?: string; dir?: string }>
 }) {
   const parametros = await searchParams
   const abaAtiva = parametros.aba === 'pagar' ? 'pagar' : 'receber'
@@ -166,14 +166,72 @@ function SecaoAReceber({
   abertas: ContaAReceber[]
   encerradas: ContaAReceber[]
   hoje: string
-  parametros: { ordenar?: string; dir?: string }
+  parametros: { ver?: string; ordenar?: string; dir?: string }
 }) {
+  const verRecebidas = parametros.ver === 'recebidas'
   const ordenacao = lerOrdenacao(parametros, CAMPOS_RECEBER, 'due_date')
   const linhas = ordenarLinhas(abertas, ordenacao.campo, ordenacao.direcao)
 
   return (
     <section aria-label="Contas a receber">
-      {linhas.length === 0 ? (
+      <div className="mb-3 flex gap-1.5">
+        <Link
+          href="/painel/financeiro"
+          className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+            !verRecebidas
+              ? 'border-marca-700 bg-marca-700 text-white'
+              : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50'
+          }`}
+        >
+          Abertas ({abertas.length})
+        </Link>
+        <Link
+          href="/painel/financeiro?ver=recebidas"
+          className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+            verRecebidas
+              ? 'border-marca-700 bg-marca-700 text-white'
+              : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50'
+          }`}
+        >
+          Recebidas ({encerradas.length})
+        </Link>
+      </div>
+
+      {verRecebidas ? (
+        encerradas.length === 0 ? (
+          <EstadoVazio
+            titulo="Nenhuma conta recebida ainda"
+            descricao="Quando um recebimento quitar uma conta, ela aparece aqui."
+          />
+        ) : (
+          <Tabela>
+            <CabecalhoDaTabela>
+              <CabecalhoFixo rotulo="Descrição" />
+              <CabecalhoFixo rotulo="Vencimento" />
+              <CabecalhoFixo rotulo="Situação" />
+              <CabecalhoFixo rotulo="Valor" alinhamento="direita" />
+            </CabecalhoDaTabela>
+            <tbody>
+              {encerradas.map((conta) => (
+                <LinhaDaTabela key={conta.id}>
+                  <Celula destaque>{conta.description}</Celula>
+                  <Celula>
+                    {conta.due_date !== null
+                      ? new Date(`${conta.due_date}T12:00:00`).toLocaleDateString('pt-BR')
+                      : '—'}
+                  </Celula>
+                  <Celula>
+                    <Distintivo tom="sucesso">Recebida</Distintivo>
+                  </Celula>
+                  <Celula alinhamento="direita" destaque>
+                    {formatarCentavos(conta.amount_cents)}
+                  </Celula>
+                </LinhaDaTabela>
+              ))}
+            </tbody>
+          </Tabela>
+        )
+      ) : linhas.length === 0 ? (
         <EstadoVazio
           titulo="Nada a receber — tudo em dia"
           descricao="As vendas a prazo criam contas aqui automaticamente."
@@ -230,24 +288,6 @@ function SecaoAReceber({
           </tbody>
         </Tabela>
       )}
-      {encerradas.length > 0 ? (
-        <details className="mt-3">
-          <summary className="cursor-pointer text-sm font-medium text-zinc-500">
-            Recebidas ({encerradas.length})
-          </summary>
-          <ul className="mt-2 space-y-1">
-            {encerradas.map((conta) => (
-              <li
-                key={conta.id}
-                className="flex justify-between rounded-lg bg-zinc-50 px-3 py-1.5 text-sm text-zinc-500"
-              >
-                <span>{conta.description}</span>
-                <span>{formatarCentavos(conta.amount_cents)}</span>
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
     </section>
   )
 }
@@ -271,20 +311,10 @@ function SecaoDespesas({
 
   return (
     <section aria-label="Despesas" className="space-y-4">
-      <details className="group rounded-xl border border-zinc-200 bg-white">
-        <summary className="text-marca-700 flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-bold select-none">
-          <span
-            aria-hidden
-            className="bg-marca-50 grid h-6 w-6 place-items-center rounded-full text-base group-open:rotate-45"
-          >
-            +
-          </span>
-          Nova despesa
-        </summary>
-        <div className="border-t border-zinc-100 p-4">
-          <FormularioDespesa categorias={categorias} />
-        </div>
-      </details>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <BotaoCategorias categorias={categorias} />
+        <BotaoNovaDespesa categorias={categorias} />
+      </div>
 
       {linhas.length === 0 ? (
         <EstadoVazio
@@ -364,7 +394,6 @@ function SecaoDespesas({
           </tbody>
         </Tabela>
       )}
-      <GerenciarCategorias categorias={categorias} />
     </section>
   )
 }
