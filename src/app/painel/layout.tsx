@@ -12,6 +12,7 @@ const NAVEGACAO = [
   { rota: '/painel/produtos', rotulo: 'Produtos' },
   { rota: '/painel/financeiro', rotulo: 'Financeiro' },
   { rota: '/painel/relatorios', rotulo: 'Relatórios' },
+  { rota: '/catalogo', rotulo: 'Catálogo' },
 ] as const
 
 export default async function LayoutPainel({ children }: { children: ReactNode }) {

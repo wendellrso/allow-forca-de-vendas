@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { formatarCentavos } from '@/dominio/dinheiro'
 import { type Produto, type Venda } from '@/lib/tipos'
 import { classeCartao, TituloPagina } from '@/componentes/ui'
+import { CompartilharCatalogo } from '@/componentes/compartilhar-catalogo'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,6 +14,8 @@ function inicioDoMes(): string {
 }
 
 export default async function PaginaInicio() {
+  const cabecalhos = await headers()
+  const urlDoCatalogo = `https://${cabecalhos.get('host') ?? ''}/catalogo`
   const supabase = await criarClienteServidor()
 
   const [aguardando, vendasDoMes, contasAbertas, produtos] = await Promise.all([
@@ -64,6 +68,14 @@ export default async function PaginaInicio() {
   return (
     <div>
       <TituloPagina titulo="Início" />
+      <div className={`${classeCartao} mb-4`}>
+        <p className="mb-2 font-bold text-zinc-900">Catálogo dos clientes</p>
+        <p className="mb-3 text-sm text-zinc-500">
+          Mande este link para seus clientes: eles escolhem os produtos e o pedido chega no seu
+          WhatsApp.
+        </p>
+        <CompartilharCatalogo url={urlDoCatalogo} />
+      </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {cartoes.map((cartao) => (
           <Link
