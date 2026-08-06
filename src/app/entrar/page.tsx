@@ -1,4 +1,5 @@
 import { type Metadata } from 'next'
+import { MarcaAllow } from '@/componentes/marca'
 import { FormularioEntrada } from './formulario'
 
 export const metadata: Metadata = { title: 'Entrar' }
@@ -15,12 +16,19 @@ export default async function PaginaEntrar({
       : undefined
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-4 py-10">
+    <main className="bg-marca-800 flex min-h-dvh flex-col items-center justify-center px-4 py-10">
       <div className="mb-8 text-center">
-        <p className="text-marca-700 text-3xl font-black tracking-tight">Allow</p>
-        <p className="mt-1 text-sm text-zinc-500">Força de vendas externa</p>
+        <div className="text-dourado-400 mb-3 tracking-[0.6em]" aria-hidden>
+          •&nbsp;•&nbsp;•
+        </div>
+        <MarcaAllow tom="dourado" tamanho="lg" />
       </div>
-      <FormularioEntrada avisoInicial={avisoDeVinculo} />
+      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white p-6 shadow-xl">
+        <p className="mb-4 text-center text-sm font-medium text-zinc-500">
+          Força de vendas externa
+        </p>
+        <FormularioEntrada avisoInicial={avisoDeVinculo} />
+      </div>
     </main>
   )
 }

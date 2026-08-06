@@ -21,8 +21,11 @@ export default async function LayoutPainel({ children }: { children: ReactNode }
     <div className="min-h-dvh">
       <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/painel" className="text-marca-700 text-xl font-black tracking-tight">
-            Allow
+          <Link href="/painel" className="flex items-baseline gap-2">
+            <span className="font-marca text-marca-800 text-2xl font-medium">allow</span>
+            <span className="text-dourado-600 text-[0.6rem] tracking-[0.3em] uppercase">
+              Beauty Hair
+            </span>
           </Link>
           <form action={sair}>
             <button

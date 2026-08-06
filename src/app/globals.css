@@ -1,13 +1,34 @@
 @import 'tailwindcss';
 
+/*
+ * Identidade Allow Beauty Hair, extraída do catálogo oficial:
+ * vinho profundo, dourado e serifa elegante.
+ */
 @theme {
-  --color-marca-50: #fdf2f8;
-  --color-marca-100: #fce7f3;
-  --color-marca-600: #db2777;
-  --color-marca-700: #be185d;
-  --color-marca-800: #9d174d;
+  --font-sans: var(--fonte-corpo), ui-sans-serif, system-ui, sans-serif;
+  --font-marca: var(--fonte-marca), 'Didot', 'Bodoni MT', Georgia, serif;
+
+  --color-marca-50: #faf2f6;
+  --color-marca-100: #f3dfe8;
+  --color-marca-600: #7c2347;
+  --color-marca-700: #5d1733;
+  --color-marca-800: #491226;
+  --color-marca-900: #370d1c;
+
+  --color-dourado-300: #ecd9a8;
+  --color-dourado-400: #ddba6b;
+  --color-dourado-500: #c89b45;
+  --color-dourado-600: #a87e2f;
 }
 
 body {
-  @apply bg-zinc-50 text-zinc-900 antialiased;
+  @apply bg-stone-50 text-zinc-900 antialiased;
+}
+
+/* O dourado da marca é um degradê, como o logo do catálogo. */
+.texto-dourado {
+  background-image: linear-gradient(105deg, #a87e2f 0%, #e8c877 45%, #c89b45 70%, #9c7326 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }

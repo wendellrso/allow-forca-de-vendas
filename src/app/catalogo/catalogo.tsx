@@ -120,17 +120,18 @@ export function Catalogo({ produtos }: { produtos: ProdutoDoCatalogo[] }) {
       </ul>
 
       {totalDeItens > 0 ? (
-        <div className="fixed inset-x-0 bottom-0 border-t border-zinc-200 bg-white p-4 shadow-lg">
+        <div className="bg-marca-800 fixed inset-x-0 bottom-0 p-4 shadow-lg">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8c877] to-transparent" />
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
-            <p className="font-bold">
+            <p className="font-bold text-white">
               {totalDeItens} {totalDeItens === 1 ? 'item' : 'itens'} ·{' '}
-              {formatarCentavos(totalCentavos)}
+              <span className="text-dourado-300">{formatarCentavos(totalCentavos)}</span>
             </p>
             {!fechando ? (
               <button
                 type="button"
                 onClick={() => definirFechando(true)}
-                className={`${classeBotaoPrimario} w-auto`}
+                className="bg-dourado-500 text-marca-900 focus:ring-dourado-300 inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-base font-bold hover:brightness-110 focus:ring-2 focus:outline-none"
               >
                 Fechar pedido
               </button>
