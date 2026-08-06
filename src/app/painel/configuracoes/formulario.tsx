@@ -1,71 +1,118 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useState, type ReactNode } from 'react'
 import { mascararTelefone } from '@/dominio/mascaras'
-import { type Organizacao } from '@/lib/tipos'
-import {
-  classeBotaoPrimario,
-  classeEntrada,
-  classeRotulo,
-  ErroDeCampo,
-  MensagemErro,
-} from '@/componentes/ui'
-import { salvarConfiguracoes, type EstadoConfiguracoes } from './acoes'
+import { classeEntrada, ErroDeCampo } from '@/componentes/ui'
+import { salvarConfiguracao, type EstadoConfiguracoes } from './acoes'
 
-export function FormularioConfiguracoes({ organizacao }: { organizacao: Organizacao }) {
+/**
+ * Cartão de configuração no padrão dos SaaS de referência: título e campo
+ * em cima, rodapé com a dica e o botão de salvar do próprio cartão.
+ */
+function CartaoDeAjuste({
+  titulo,
+  descricao,
+  rodape,
+  acao,
+  pendente,
+  estado,
+  children,
+}: {
+  titulo: string
+  descricao: string
+  rodape: string
+  acao: (dados: FormData) => void
+  pendente: boolean
+  estado: EstadoConfiguracoes
+  children: ReactNode
+}) {
+  return (
+    <form
+      action={acao}
+      className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm"
+      noValidate
+    >
+      <div className="p-6">
+        <h2 className="font-bold text-zinc-900">{titulo}</h2>
+        <p className="mt-1 mb-4 text-sm leading-relaxed text-zinc-500">{descricao}</p>
+        {children}
+        <ErroDeCampo mensagem={estado.erro} />
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t border-zinc-100 bg-zinc-50/70 px-6 py-3">
+        <p className="text-xs text-zinc-400">{rodape}</p>
+        <span className="flex items-center gap-3">
+          {estado.sucesso === true ? (
+            <span role="status" className="text-xs font-semibold text-emerald-700">
+              Salvo ✓
+            </span>
+          ) : null}
+          <button
+            type="submit"
+            disabled={pendente}
+            className="from-marca-600 to-marca-800 shadow-marca-800/20 rounded-lg bg-gradient-to-br px-4 py-1.5 text-sm font-bold text-white shadow hover:brightness-110 disabled:opacity-60"
+          >
+            {pendente ? 'Salvando…' : 'Salvar'}
+          </button>
+        </span>
+      </div>
+    </form>
+  )
+}
+
+export function CartaoNomeDaEmpresa({ nome }: { nome: string }) {
   const [estado, acao, pendente] = useActionState<EstadoConfiguracoes, FormData>(
-    salvarConfiguracoes,
+    salvarConfiguracao,
     {},
   )
-  const [whatsapp, definirWhatsapp] = useState(mascararTelefone(organizacao.whatsapp ?? ''))
-  const erros = estado.erros ?? {}
 
   return (
-    <form action={acao} className="space-y-4" noValidate>
-      <MensagemErro mensagem={erros.geral} />
-      {estado.sucesso === true ? (
-        <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          Configurações salvas ✓
-        </p>
-      ) : null}
+    <CartaoDeAjuste
+      titulo="Nome da empresa"
+      descricao="Aparece no painel e nos relatórios."
+      rodape="Use o nome pelo qual seus clientes conhecem você."
+      acao={acao}
+      pendente={pendente}
+      estado={estado}
+    >
+      <input type="hidden" name="campo" value="nome" />
+      <label htmlFor="nome" className="sr-only">
+        Nome da empresa
+      </label>
+      <input id="nome" name="nome" required defaultValue={nome} className={classeEntrada} />
+    </CartaoDeAjuste>
+  )
+}
 
-      <div>
-        <label htmlFor="nome" className={classeRotulo}>
-          Nome da empresa *
-        </label>
-        <input
-          id="nome"
-          name="nome"
-          required
-          defaultValue={organizacao.name}
-          className={classeEntrada}
-        />
-        <ErroDeCampo mensagem={erros.nome} />
-      </div>
+export function CartaoWhatsapp({ whatsapp }: { whatsapp: string | null }) {
+  const [estado, acao, pendente] = useActionState<EstadoConfiguracoes, FormData>(
+    salvarConfiguracao,
+    {},
+  )
+  const [valor, definirValor] = useState(mascararTelefone(whatsapp ?? ''))
 
-      <div>
-        <label htmlFor="whatsapp" className={classeRotulo}>
-          WhatsApp que recebe os pedidos do catálogo
-        </label>
-        <input
-          id="whatsapp"
-          name="whatsapp"
-          type="tel"
-          inputMode="tel"
-          placeholder="(82) 99999-0000"
-          value={whatsapp}
-          onChange={(evento) => definirWhatsapp(mascararTelefone(evento.target.value))}
-          className={classeEntrada}
-        />
-        <ErroDeCampo mensagem={erros.whatsapp} />
-        <p className="mt-1 text-xs text-zinc-400">
-          É para este número que o cliente é levado ao fechar o pedido no catálogo.
-        </p>
-      </div>
-
-      <button type="submit" disabled={pendente} className={classeBotaoPrimario}>
-        {pendente ? 'Salvando…' : 'Salvar configurações'}
-      </button>
-    </form>
+  return (
+    <CartaoDeAjuste
+      titulo="WhatsApp do catálogo"
+      descricao="É para este número que o cliente é levado ao fechar o pedido no catálogo."
+      rodape="Número com DDD, ex.: (82) 99999-0000."
+      acao={acao}
+      pendente={pendente}
+      estado={estado}
+    >
+      <input type="hidden" name="campo" value="whatsapp" />
+      <label htmlFor="whatsapp" className="sr-only">
+        WhatsApp que recebe os pedidos
+      </label>
+      <input
+        id="whatsapp"
+        name="whatsapp"
+        type="tel"
+        inputMode="tel"
+        placeholder="(82) 99999-0000"
+        value={valor}
+        onChange={(evento) => definirValor(mascararTelefone(evento.target.value))}
+        className={classeEntrada}
+      />
+    </CartaoDeAjuste>
   )
 }

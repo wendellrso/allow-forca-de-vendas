@@ -6,35 +6,50 @@ import { exigirSessao } from '@/lib/sessao'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
 
 export interface EstadoConfiguracoes {
-  erros?: Record<string, string>
+  erro?: string
   sucesso?: boolean
 }
 
-export async function salvarConfiguracoes(
+/**
+ * Cada cartão de configuração salva o seu próprio campo — o formulário diz
+ * qual através do campo oculto `campo`.
+ */
+export async function salvarConfiguracao(
   _anterior: EstadoConfiguracoes,
   dados: FormData,
 ): Promise<EstadoConfiguracoes> {
   const sessao = await exigirSessao()
+  const campo = String(dados.get('campo') ?? '')
 
-  const resultado = esquemaOrganizacao.safeParse({
-    nome: dados.get('nome'),
-    whatsapp: dados.get('whatsapp') ?? '',
-  })
-  if (!resultado.success) {
-    return { erros: errosPorCampo(resultado.error) }
+  let mudanca: { name: string } | { whatsapp: string | null }
+  if (campo === 'nome') {
+    const resultado = esquemaOrganizacao.pick({ nome: true }).safeParse({
+      nome: dados.get('nome'),
+    })
+    if (!resultado.success) {
+      return { erro: errosPorCampo(resultado.error).nome ?? 'Nome inválido.' }
+    }
+    mudanca = { name: resultado.data.nome }
+  } else if (campo === 'whatsapp') {
+    const resultado = esquemaOrganizacao.pick({ whatsapp: true }).safeParse({
+      whatsapp: dados.get('whatsapp') ?? '',
+    })
+    if (!resultado.success) {
+      return { erro: errosPorCampo(resultado.error).whatsapp ?? 'Número inválido.' }
+    }
+    mudanca = { whatsapp: resultado.data.whatsapp ?? null }
+  } else {
+    return { erro: 'Configuração desconhecida.' }
   }
 
   const supabase = await criarClienteServidor()
   const { error } = await supabase
     .from('organizations')
-    .update({
-      name: resultado.data.nome,
-      whatsapp: resultado.data.whatsapp ?? null,
-    })
+    .update(mudanca)
     .eq('id', sessao.organizacaoId)
 
   if (error !== null) {
-    return { erros: { geral: 'Não foi possível salvar as configurações.' } }
+    return { erro: 'Não foi possível salvar. Tente novamente.' }
   }
 
   revalidatePath('/painel/configuracoes')
