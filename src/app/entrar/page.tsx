@@ -25,7 +25,7 @@ export default async function PaginaEntrar({
       </div>
       <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white p-6 shadow-xl">
         <p className="mb-4 text-center text-sm font-medium text-zinc-500">
-          Força de vendas externa
+          Que bom te ver! Entre para cuidar das suas vendas.
         </p>
         <FormularioEntrada avisoInicial={avisoDeVinculo} />
       </div>
