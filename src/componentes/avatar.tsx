@@ -29,6 +29,17 @@ export function iniciaisDe(nome: string): string {
   return `${primeira}${ultima}`.toLocaleUpperCase('pt-BR')
 }
 
+/** Chip de categoria com a mesma cor estável do avatar: nome → sempre a mesma cor. */
+export function ChipDeCategoria({ nome }: { nome: string }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${TONS[indiceEstavel(nome)]}`}
+    >
+      {nome}
+    </span>
+  )
+}
+
 export function Avatar({ nome, tamanho = 'md' }: { nome: string; tamanho?: 'sm' | 'md' | 'lg' }) {
   const classes = {
     sm: 'h-7 w-7 text-[10px]',

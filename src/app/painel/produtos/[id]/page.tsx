@@ -1,8 +1,10 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { formatarCentavos } from '@/dominio/dinheiro'
+import { tempoRelativo } from '@/dominio/tempo'
 import { type MovimentoEstoque, type Produto } from '@/lib/tipos'
-import { classeCartao, TituloPagina } from '@/componentes/ui'
+import { BarraDeProgresso, classeCartao, Distintivo } from '@/componentes/ui'
 import { FormularioProduto } from '../formulario'
 import { FormularioMovimento } from './movimento'
 
@@ -33,53 +35,100 @@ export default async function PaginaProduto({ params }: { params: Promise<{ id: 
     notFound()
   }
   const movimentos = (linhasMovimentos ?? []) as MovimentoEstoque[]
+  const estoqueBaixo = produto.min_stock !== null && produto.stock_quantity <= produto.min_stock
 
   return (
-    <div className="mx-auto max-w-lg space-y-8">
-      <div>
-        <TituloPagina titulo={produto.name} />
-        <FormularioProduto produto={produto} />
+    <div className="mx-auto max-w-4xl">
+      <Link href="/painel/produtos" className="hover:text-marca-700 text-sm text-zinc-500">
+        ← Produtos
+      </Link>
+
+      <div className="mt-2 mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-marca text-2xl font-bold text-zinc-900">{produto.name}</h1>
+          <p className="text-sm text-zinc-500">
+            {formatarCentavos(produto.price_cents)} / {produto.unit}
+          </p>
+        </div>
+        <Distintivo tom={!produto.active ? 'perigo' : estoqueBaixo ? 'atencao' : 'sucesso'}>
+          {!produto.active ? 'Inativo' : estoqueBaixo ? 'Estoque baixo' : 'Ativo no catálogo'}
+        </Distintivo>
       </div>
 
-      <section aria-labelledby="titulo-estoque" className="space-y-3">
-        <h2 id="titulo-estoque" className="text-lg font-bold text-zinc-900">
-          Estoque — saldo atual: {produto.stock_quantity} {produto.unit}
-        </h2>
-        <FormularioMovimento produtoId={produto.id} />
-        {movimentos.length === 0 ? (
-          <p className="text-sm text-zinc-500">Nenhum movimento registrado.</p>
-        ) : (
-          <ul className="space-y-1.5">
-            {movimentos.map((movimento) => (
-              <li key={movimento.id} className={`${classeCartao} py-2.5`}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-zinc-800">
-                    {ROTULO_MOVIMENTO[movimento.kind]}
-                    {movimento.reason !== null ? ` — ${movimento.reason}` : ''}
-                  </span>
-                  <span
-                    className={
-                      movimento.delta > 0
-                        ? 'font-semibold text-emerald-700'
-                        : 'font-semibold text-red-700'
-                    }
-                  >
-                    {movimento.delta > 0 ? `+${movimento.delta}` : movimento.delta}
-                  </span>
-                </div>
-                <p className="text-xs text-zinc-400">
-                  {new Date(movimento.created_at).toLocaleString('pt-BR')}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <div className="grid gap-4 lg:grid-cols-[7fr_5fr]">
+        <div className={classeCartao}>
+          <h2 className="mb-3 font-bold text-zinc-900">Cadastro</h2>
+          <FormularioProduto produto={produto} />
+        </div>
 
-      <p className="text-sm text-zinc-500">
-        Preço atual: {formatarCentavos(produto.price_cents)}. Saídas por venda acontecem na
-        confirmação da venda.
-      </p>
+        <div className="space-y-4">
+          <div className={classeCartao}>
+            <h2 className="mb-2 font-bold text-zinc-900">Estoque</h2>
+            <div className="flex items-baseline gap-2">
+              <p
+                className={`text-4xl font-bold ${estoqueBaixo ? 'text-amber-700' : 'text-zinc-900'}`}
+              >
+                {produto.stock_quantity}
+              </p>
+              <p className="text-sm text-zinc-500">{produto.unit} em estoque</p>
+            </div>
+            {produto.min_stock !== null ? (
+              <div className="mt-2">
+                <BarraDeProgresso
+                  valor={produto.stock_quantity}
+                  maximo={Math.max(produto.min_stock * 2, 1)}
+                  tom={estoqueBaixo ? 'ambar' : 'verde'}
+                />
+                <p className="mt-1 text-xs text-zinc-500">
+                  mínimo definido: {produto.min_stock} {produto.unit}
+                  {estoqueBaixo ? ' — hora de repor' : ''}
+                </p>
+              </div>
+            ) : null}
+            <div className="mt-3 border-t border-zinc-100 pt-3">
+              <FormularioMovimento produtoId={produto.id} />
+            </div>
+          </div>
+
+          <div className={classeCartao}>
+            <h2 className="mb-2 font-bold text-zinc-900">Movimentos recentes</h2>
+            {movimentos.length === 0 ? (
+              <p className="text-sm text-zinc-500">
+                Nenhum movimento ainda. Registre a primeira entrada acima.
+              </p>
+            ) : (
+              <ul className="divide-y divide-zinc-100">
+                {movimentos.map((movimento) => (
+                  <li key={movimento.id} className="flex items-center gap-3 py-2">
+                    <span
+                      aria-hidden
+                      className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-bold ${
+                        movimento.delta > 0
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}
+                    >
+                      {movimento.delta > 0 ? '↑' : '↓'}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-zinc-800">
+                        {ROTULO_MOVIMENTO[movimento.kind]}
+                        {movimento.reason !== null ? ` — ${movimento.reason}` : ''}
+                      </p>
+                      <p className="text-xs text-zinc-400">{tempoRelativo(movimento.created_at)}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 text-sm font-bold ${movimento.delta > 0 ? 'text-emerald-700' : 'text-red-700'}`}
+                    >
+                      {movimento.delta > 0 ? `+${movimento.delta}` : movimento.delta}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

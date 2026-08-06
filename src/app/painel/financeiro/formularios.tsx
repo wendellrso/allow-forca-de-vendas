@@ -78,8 +78,7 @@ export function FormularioDespesa({ categorias }: { categorias: CategoriaDeDespe
   }
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4">
-      <p className="mb-3 font-bold text-zinc-900">Nova despesa</p>
+    <div>
       <form action={acao} className="space-y-3" noValidate>
         <MensagemErro mensagem={erros.geral} />
         <div className="grid grid-cols-2 gap-3">
@@ -273,29 +272,31 @@ export function BotoesDespesa({ despesaId, aPagar }: { despesaId: string; aPagar
 export function GerenciarCategorias({ categorias }: { categorias: CategoriaDeDespesa[] }) {
   return (
     <details className="mt-3">
-      <summary className="cursor-pointer text-sm font-medium text-zinc-500">
+      <summary className="cursor-pointer text-sm font-medium text-zinc-500 select-none">
         Gerenciar categorias ({categorias.length})
       </summary>
-      <ul className="mt-2 space-y-1">
+      <ul className="mt-2 flex flex-wrap gap-1.5">
         {categorias.map((categoria) => (
           <li
             key={categoria.id}
-            className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-1.5 text-sm"
+            className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white py-1 pr-1.5 pl-3 text-sm text-zinc-700"
           >
-            <span>{categoria.name}</span>
-            <form action={arquivarCategoria}>
+            {categoria.name}
+            <form action={arquivarCategoria} className="grid">
               <input type="hidden" name="id" value={categoria.id} />
               <button
                 type="submit"
-                className="text-xs font-medium text-zinc-400 hover:text-red-700"
+                aria-label={`Arquivar a categoria ${categoria.name}`}
+                title="Arquivar"
+                className="grid h-5 w-5 place-items-center rounded-full text-xs text-zinc-400 hover:bg-red-50 hover:text-red-700"
               >
-                Arquivar
+                ✕
               </button>
             </form>
           </li>
         ))}
       </ul>
-      <p className="mt-1 text-xs text-zinc-400">
+      <p className="mt-1.5 text-xs text-zinc-400">
         Arquivar tira a categoria das novas despesas; as antigas continuam com ela.
       </p>
     </details>

@@ -3,7 +3,14 @@ import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { formatarCentavos } from '@/dominio/dinheiro'
 import { lerOrdenacao, ordenarLinhas } from '@/dominio/ordenacao'
 import { type CategoriaDeDespesa, type ContaAReceber, type Despesa } from '@/lib/tipos'
-import { Distintivo, EstadoVazio, TituloPagina } from '@/componentes/ui'
+import {
+  BarraDeProgresso,
+  classeCartao,
+  Distintivo,
+  EstadoVazio,
+  TituloPagina,
+} from '@/componentes/ui'
+import { ChipDeCategoria } from '@/componentes/avatar'
 import {
   Tabela,
   CabecalhoDaTabela,
@@ -34,7 +41,7 @@ const CAMPOS_DESPESA = [
 ] as const
 
 function hojeIso(): string {
-  return new Date().toISOString().slice(0, 10)
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Maceio' })
 }
 
 export default async function PaginaFinanceiro({
@@ -69,7 +76,12 @@ export default async function PaginaFinanceiro({
 
   const abertas = contas.filter((conta) => conta.status === 'aberto' || conta.status === 'parcial')
   const encerradas = contas.filter((conta) => conta.status === 'recebido')
+  const vencidas = abertas.filter((conta) => conta.due_date !== null && conta.due_date < hoje)
   const totalAberto = abertas.reduce(
+    (soma, conta) => soma + conta.amount_cents - conta.received_cents,
+    0,
+  )
+  const totalVencido = vencidas.reduce(
     (soma, conta) => soma + conta.amount_cents - conta.received_cents,
     0,
   )
@@ -81,19 +93,48 @@ export default async function PaginaFinanceiro({
 
   return (
     <div>
-      <TituloPagina titulo="Financeiro" />
+      <TituloPagina
+        titulo="Financeiro"
+        subtitulo="Quem ainda deve, o que já venceu e o custo das viagens."
+      />
+
+      <div className="mb-4 grid grid-cols-3 gap-2">
+        <div className={classeCartao}>
+          <p className="text-lg font-bold text-zinc-900 sm:text-2xl">
+            {formatarCentavos(totalAberto)}
+          </p>
+          <p className="text-xs text-zinc-500">A receber em aberto</p>
+        </div>
+        <div className={`${classeCartao} ${vencidas.length > 0 ? 'border-red-200 bg-red-50' : ''}`}>
+          <p
+            className={`text-lg font-bold sm:text-2xl ${vencidas.length > 0 ? 'text-red-700' : 'text-zinc-900'}`}
+          >
+            {formatarCentavos(totalVencido)}
+          </p>
+          <p className={`text-xs ${vencidas.length > 0 ? 'text-red-700' : 'text-zinc-500'}`}>
+            Vencidas ({vencidas.length})
+          </p>
+        </div>
+        <div className={classeCartao}>
+          <p className="text-lg font-bold text-zinc-900 sm:text-2xl">
+            {formatarCentavos(totalAPagar)}
+          </p>
+          <p className="text-xs text-zinc-500">Despesas a pagar</p>
+        </div>
+      </div>
+
       <nav aria-label="Abas do financeiro" className="mb-4 flex gap-1 overflow-x-auto">
         <Link
           href="/painel/financeiro"
           className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap ${abaAtiva === 'receber' ? 'bg-marca-700 text-white' : 'text-zinc-600 hover:bg-zinc-100'}`}
         >
-          A receber ({formatarCentavos(totalAberto)})
+          A receber
         </Link>
         <Link
           href="/painel/financeiro?aba=pagar"
           className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap ${abaAtiva === 'pagar' ? 'bg-marca-700 text-white' : 'text-zinc-600 hover:bg-zinc-100'}`}
         >
-          Despesas ({formatarCentavos(totalAPagar)} a pagar)
+          Despesas
         </Link>
       </nav>
 
@@ -134,7 +175,7 @@ function SecaoAReceber({
     <section aria-label="Contas a receber">
       {linhas.length === 0 ? (
         <EstadoVazio
-          titulo="Nada a receber"
+          titulo="Nada a receber — tudo em dia"
           descricao="As vendas a prazo criam contas aqui automaticamente."
         />
       ) : (
@@ -142,13 +183,7 @@ function SecaoAReceber({
           <CabecalhoDaTabela>
             <CabecalhoOrdenavel campo="description" rotulo="Descrição" ordenacao={ordenacao} />
             <CabecalhoOrdenavel campo="due_date" rotulo="Vencimento" ordenacao={ordenacao} />
-            <CabecalhoOrdenavel campo="status" rotulo="Situação" ordenacao={ordenacao} />
-            <CabecalhoOrdenavel
-              campo="amount_cents"
-              rotulo="Valor"
-              ordenacao={ordenacao}
-              alinhamento="direita"
-            />
+            <CabecalhoFixo rotulo="Recebido" />
             <CabecalhoFixo rotulo="Falta" alinhamento="direita" />
             <CabecalhoFixo rotulo="Registrar recebimento" />
           </CabecalhoDaTabela>
@@ -157,20 +192,32 @@ function SecaoAReceber({
               const vencida = conta.due_date !== null && conta.due_date < hoje
               return (
                 <LinhaDaTabela key={conta.id}>
-                  <Celula destaque>{conta.description}</Celula>
-                  <Celula>
-                    {conta.due_date !== null
-                      ? new Date(`${conta.due_date}T12:00:00`).toLocaleDateString('pt-BR')
-                      : '—'}
+                  <Celula destaque>
+                    <span className="flex items-center gap-2">
+                      {conta.description}
+                      {vencida ? <Distintivo tom="perigo">Vencida</Distintivo> : null}
+                    </span>
                   </Celula>
                   <Celula>
-                    <Distintivo
-                      tom={vencida ? 'perigo' : conta.status === 'parcial' ? 'atencao' : 'info'}
-                    >
-                      {vencida ? 'Vencida' : conta.status === 'parcial' ? 'Parcial' : 'Em aberto'}
-                    </Distintivo>
+                    <span className={vencida ? 'font-semibold text-red-700' : ''}>
+                      {conta.due_date !== null
+                        ? new Date(`${conta.due_date}T12:00:00`).toLocaleDateString('pt-BR')
+                        : '—'}
+                    </span>
                   </Celula>
-                  <Celula alinhamento="direita">{formatarCentavos(conta.amount_cents)}</Celula>
+                  <Celula>
+                    <div className="w-36">
+                      <BarraDeProgresso
+                        valor={conta.received_cents}
+                        maximo={conta.amount_cents}
+                        tom={conta.received_cents > 0 ? 'verde' : 'vinho'}
+                      />
+                      <p className="mt-1 text-[11px] text-zinc-500">
+                        {formatarCentavos(conta.received_cents)} de{' '}
+                        {formatarCentavos(conta.amount_cents)}
+                      </p>
+                    </div>
+                  </Celula>
                   <Celula alinhamento="direita" destaque>
                     {formatarCentavos(conta.amount_cents - conta.received_cents)}
                   </Celula>
@@ -224,7 +271,21 @@ function SecaoDespesas({
 
   return (
     <section aria-label="Despesas" className="space-y-4">
-      <FormularioDespesa categorias={categorias} />
+      <details className="group rounded-xl border border-zinc-200 bg-white">
+        <summary className="text-marca-700 flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-bold select-none">
+          <span
+            aria-hidden
+            className="bg-marca-50 grid h-6 w-6 place-items-center rounded-full text-base group-open:rotate-45"
+          >
+            +
+          </span>
+          Nova despesa
+        </summary>
+        <div className="border-t border-zinc-100 p-4">
+          <FormularioDespesa categorias={categorias} />
+        </div>
+      </details>
+
       {linhas.length === 0 ? (
         <EstadoVazio
           titulo="Nenhuma despesa registrada"
@@ -278,7 +339,9 @@ function SecaoDespesas({
                 <Celula>
                   {new Date(`${despesa.expense_date}T12:00:00`).toLocaleDateString('pt-BR')}
                 </Celula>
-                <Celula destaque>{despesa.categoria}</Celula>
+                <Celula>
+                  <ChipDeCategoria nome={despesa.categoria} />
+                </Celula>
                 <Celula>{despesa.description ?? '—'}</Celula>
                 <Celula>
                   {despesa.city !== null

@@ -3,6 +3,7 @@ import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { lerOrdenacao, ordenarLinhas } from '@/dominio/ordenacao'
 import { type Cliente } from '@/lib/tipos'
 import { classeBotaoPrimario, classeEntrada, EstadoVazio, TituloPagina } from '@/componentes/ui'
+import { Avatar } from '@/componentes/avatar'
 import {
   Tabela,
   CabecalhoDaTabela,
@@ -105,7 +106,11 @@ export default async function PaginaClientes({
             {clientes.map((cliente) => (
               <LinhaDaTabela key={cliente.id}>
                 <Celula destaque>
-                  <Link href={`/painel/clientes/${cliente.id}`} className="hover:text-marca-700">
+                  <Link
+                    href={`/painel/clientes/${cliente.id}`}
+                    className="hover:text-marca-700 flex items-center gap-2.5"
+                  >
+                    <Avatar nome={cliente.name} tamanho="sm" />
                     {cliente.name}
                   </Link>
                 </Celula>
