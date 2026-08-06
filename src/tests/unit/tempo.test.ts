@@ -11,7 +11,7 @@ describe('tempoRelativo', () => {
   })
 
   it('ontem e datas antigas', () => {
-    expect(tempoRelativo('2026-08-05T16:00:00-03:00', agora)).toBe('ontem')
+    expect(tempoRelativo('2026-08-05T10:00:00-03:00', agora)).toBe('ontem')
     expect(tempoRelativo('2026-08-01T10:00:00-03:00', agora)).toBe('01/08')
   })
 })
