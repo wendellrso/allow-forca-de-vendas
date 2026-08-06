@@ -1,0 +1,7 @@
+# Variáveis de execução para `npm run preview` (Worker local).
+# Copie para .dev.vars e preencha. Em produção, os mesmos nomes são
+# cadastrados no painel do Cloudflare, em Settings -> Variables and Secrets.
+NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=chave-anon
+SUPABASE_SERVICE_ROLE_KEY=chave-service-role
+ALLOW_WHATSAPP_VENDEDORA=82999990000

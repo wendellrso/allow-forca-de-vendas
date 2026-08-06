@@ -4,7 +4,14 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   {
-    ignores: ['.next/**', 'node_modules/**', 'next-env.d.ts', 'coverage/**'],
+    ignores: [
+      '.next/**',
+      '.open-next/**',
+      '.wrangler/**',
+      'node_modules/**',
+      'next-env.d.ts',
+      'coverage/**',
+    ],
   },
   ...nextCoreWebVitals,
   ...nextTypescript,

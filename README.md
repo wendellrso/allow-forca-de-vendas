@@ -43,6 +43,35 @@ Pré-requisitos: Node 22+ e um projeto Supabase **exclusivo do Allow**.
 
 6. `npm run dev` e entre com o e-mail e a senha criados.
 
+## Hospedagem — Cloudflare Workers
+
+O aplicativo roda no Cloudflare Workers através do adaptador OpenNext
+(`wrangler.jsonc` e `open-next.config.ts`). Decisão de plataforma: a
+hospedagem da STOK é Cloudflare (RD-073 no repositório do Studio).
+
+**Deploy contínuo pelo painel** (recomendado): Cloudflare → _Workers &
+Pages → Create → Import a repository_ → `allow-forca-de-vendas`, com:
+
+- comando de build: `npx opennextjs-cloudflare build`
+- comando de deploy: `npx opennextjs-cloudflare deploy`
+
+**Variáveis**, em _Settings → Variables and Secrets_ do Worker:
+
+| Nome                            | Tipo       |
+| ------------------------------- | ---------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | texto      |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | texto      |
+| `SUPABASE_SERVICE_ROLE_KEY`     | **secret** |
+| `ALLOW_WHATSAPP_VENDEDORA`      | texto      |
+
+**Domínio próprio**: _Settings → Domains & Routes → Custom domain_ →
+`allow.stokbr.com.br` (a zona já está na mesma conta; o certificado é
+automático).
+
+**Deploy manual**: `npm run deploy` (exige `npx wrangler login`).
+**Worker local**: `npm run preview`, com as variáveis em `.dev.vars`
+(copie de `.dev.vars.example`).
+
 ## Qualidade
 
 `npm run verify` executa formatação, lint, tipos, testes de unidade e build —

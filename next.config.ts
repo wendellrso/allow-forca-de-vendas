@@ -1,4 +1,9 @@
 import type { NextConfig } from 'next'
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare'
+
+// Em desenvolvimento, dá ao `next dev` acesso ao ambiente do Worker; fora
+// dele, não faz nada.
+initOpenNextCloudflareForDev()
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
