@@ -1,17 +1,12 @@
 import Link from 'next/link'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { lerOrdenacao, ordenarLinhas } from '@/dominio/ordenacao'
+import { dataCurta } from '@/dominio/tempo'
 import { type Cliente } from '@/lib/tipos'
 import { classeBotaoPrimario, classeEntrada, EstadoVazio, TituloPagina } from '@/componentes/ui'
 import { Avatar } from '@/componentes/avatar'
-import {
-  Tabela,
-  CabecalhoDaTabela,
-  CabecalhoOrdenavel,
-  CabecalhoFixo,
-  Celula,
-  LinhaDaTabela,
-} from '@/componentes/tabela'
+import { LinhaClicavel } from '@/componentes/linha-clicavel'
+import { Tabela, CabecalhoDaTabela, CabecalhoOrdenavel, Celula } from '@/componentes/tabela'
 
 export const dynamic = 'force-dynamic'
 
@@ -100,19 +95,15 @@ export default async function PaginaClientes({
               ordenacao={ordenacao}
               parametros={parametrosBase}
             />
-            <CabecalhoFixo rotulo="" />
           </CabecalhoDaTabela>
           <tbody>
             {clientes.map((cliente) => (
-              <LinhaDaTabela key={cliente.id}>
+              <LinhaClicavel key={cliente.id} href={`/painel/clientes/${cliente.id}`}>
                 <Celula destaque>
-                  <Link
-                    href={`/painel/clientes/${cliente.id}`}
-                    className="hover:text-marca-700 flex items-center gap-2.5"
-                  >
+                  <span className="flex items-center gap-2.5">
                     <Avatar nome={cliente.name} tamanho="sm" />
                     {cliente.name}
-                  </Link>
+                  </span>
                 </Celula>
                 <Celula>{cliente.city}</Celula>
                 <Celula>{cliente.state}</Celula>
@@ -125,16 +116,8 @@ export default async function PaginaClientes({
                     '—'
                   )}
                 </Celula>
-                <Celula>{new Date(cliente.created_at).toLocaleDateString('pt-BR')}</Celula>
-                <Celula alinhamento="direita">
-                  <Link
-                    href={`/painel/clientes/${cliente.id}`}
-                    className="text-marca-700 text-xs font-semibold hover:underline"
-                  >
-                    Editar
-                  </Link>
-                </Celula>
-              </LinhaDaTabela>
+                <Celula>{dataCurta(cliente.created_at)}</Celula>
+              </LinhaClicavel>
             ))}
           </tbody>
         </Tabela>

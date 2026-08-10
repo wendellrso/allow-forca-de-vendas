@@ -123,6 +123,10 @@ export const esquemaDespesa = z.object({
     .int('O valor precisa ser em centavos.')
     .min(1, 'Informe um valor maior que zero.'),
   data: z.iso.date('Informe a data da despesa.'),
+  vencimento: z.iso
+    .date('Informe um vencimento válido.')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   cidade: z.string().trim().max(80).optional(),
   uf: z
     .string()
@@ -137,6 +141,7 @@ export type DadosDespesa = z.infer<typeof esquemaDespesa>
 export const esquemaOrganizacao = z.object({
   nome,
   whatsapp: telefone.optional().or(z.literal('').transform(() => undefined)),
+  documento: cpfCnpj.optional(),
 })
 
 export type DadosOrganizacao = z.infer<typeof esquemaOrganizacao>

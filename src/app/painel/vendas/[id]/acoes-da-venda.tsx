@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { type StatusVenda } from '@/dominio/venda'
+import { type FormaDePagamento } from '@/lib/tipos'
 import {
   classeBotaoPerigo,
   classeBotaoPrimario,
@@ -11,21 +12,19 @@ import {
   MensagemErro,
 } from '@/componentes/ui'
 import { cancelarVenda, confirmarVenda, entregarVenda, type EstadoAcaoVenda } from '../acoes'
-
-interface FormaOpcao {
-  id: string
-  name: string
-}
+import { CamposDePagamento } from '../campos-de-pagamento'
 
 /** Ações que movem o pedido adiante: confirmar (com pagamento) e entregar. */
 export function AcoesDaVenda({
   vendaId,
   status,
   formas,
+  totalCentavos,
 }: {
   vendaId: string
   status: StatusVenda
-  formas: FormaOpcao[]
+  formas: FormaDePagamento[]
+  totalCentavos: number
 }) {
   const [estadoConfirmar, acaoConfirmar, confirmando] = useActionState<EstadoAcaoVenda, FormData>(
     confirmarVenda,
@@ -35,7 +34,6 @@ export function AcoesDaVenda({
     entregarVenda,
     {},
   )
-  const [condicao, definirCondicao] = useState('a_vista')
 
   if (status === 'entregue' || status === 'cancelada') {
     return null
@@ -51,50 +49,7 @@ export function AcoesDaVenda({
             Próximo passo: confirmar o pedido — o estoque baixa e o contas a receber é criado.
           </p>
           <input type="hidden" name="vendaId" value={vendaId} />
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div>
-              <label htmlFor="condicao" className={classeRotulo}>
-                Condição *
-              </label>
-              <select
-                id="condicao"
-                name="condicao"
-                value={condicao}
-                onChange={(evento) => definirCondicao(evento.target.value)}
-                className={classeEntrada}
-              >
-                <option value="a_vista">À vista</option>
-                <option value="a_prazo">A prazo</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="formaId" className={classeRotulo}>
-                Forma
-              </label>
-              <select id="formaId" name="formaId" defaultValue="" className={classeEntrada}>
-                <option value="">Escolha…</option>
-                {formas.map((forma) => (
-                  <option key={forma.id} value={forma.id}>
-                    {forma.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {condicao === 'a_prazo' ? (
-              <div>
-                <label htmlFor="vencimento" className={classeRotulo}>
-                  Vencimento *
-                </label>
-                <input
-                  id="vencimento"
-                  name="vencimento"
-                  type="date"
-                  required
-                  className={classeEntrada}
-                />
-              </div>
-            ) : null}
-          </div>
+          <CamposDePagamento formas={formas} totalCentavos={totalCentavos} />
           <button type="submit" disabled={confirmando} className={classeBotaoPrimario}>
             {confirmando ? 'Confirmando…' : 'Confirmar pedido'}
           </button>

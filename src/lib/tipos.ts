@@ -9,6 +9,7 @@ export interface Organizacao {
   id: string
   name: string
   whatsapp: string | null
+  document: string | null
 }
 
 export interface Cliente {
@@ -55,6 +56,7 @@ export interface MovimentoEstoque {
 
 export interface Venda {
   id: string
+  sale_number: number
   customer_id: string | null
   customer_name: string
   customer_phone: string | null
@@ -81,6 +83,8 @@ export interface ItemVenda {
   quantity: number
   unit_price_cents: number
   subtotal_cents: number
+  /** Custo do produto congelado no momento da venda; null quando desconhecido. */
+  unit_cost_cents: number | null
 }
 
 export interface ContaAReceber {
@@ -92,6 +96,27 @@ export interface ContaAReceber {
   received_cents: number
   due_date: string | null
   status: 'aberto' | 'parcial' | 'recebido' | 'cancelado'
+  installment_number: number
+  installment_count: number
+  created_at: string
+}
+
+export interface Recibo {
+  id: string
+  receivable_id: string
+  amount_cents: number
+  note: string | null
+  created_at: string
+}
+
+export type StatusBoleto = 'simulado' | 'solicitado' | 'emitido' | 'erro' | 'cancelado'
+
+export interface EmissaoDeBoleto {
+  id: string
+  receivable_id: string
+  status: StatusBoleto
+  provider: string | null
+  provider_ref: string | null
   created_at: string
 }
 
@@ -101,6 +126,7 @@ export interface Despesa {
   description: string | null
   amount_cents: number
   expense_date: string
+  due_date: string | null
   city: string | null
   state: string | null
   status: 'a_pagar' | 'pago'
@@ -113,8 +139,33 @@ export interface CategoriaDeDespesa {
   archived_at: string | null
 }
 
+export const TIPOS_DE_FORMA = [
+  'dinheiro',
+  'pix',
+  'cartao_debito',
+  'cartao_credito',
+  'boleto',
+  'outro',
+] as const
+
+export type TipoDeForma = (typeof TIPOS_DE_FORMA)[number]
+
+export const ROTULO_TIPO_DE_FORMA: Record<TipoDeForma, string> = {
+  dinheiro: 'Dinheiro',
+  pix: 'Pix',
+  cartao_debito: 'Cartão de débito',
+  cartao_credito: 'Cartão de crédito',
+  boleto: 'Boleto',
+  outro: 'Outra',
+}
+
 export interface FormaDePagamento {
   id: string
   name: string
+  kind: TipoDeForma
+  allows_installments: boolean
+  max_installments: number
+  first_due_days: number
+  installment_interval_days: number
   archived_at: string | null
 }

@@ -21,8 +21,17 @@ export async function salvarConfiguracao(
   const sessao = await exigirSessao()
   const campo = String(dados.get('campo') ?? '')
 
-  let mudanca: { name: string } | { whatsapp: string | null }
-  if (campo === 'nome') {
+  let mudanca: { name: string } | { whatsapp: string | null } | { document: string | null }
+  if (campo === 'documento') {
+    const resultado = esquemaOrganizacao.pick({ documento: true }).safeParse({
+      documento: dados.get('documento') ?? '',
+    })
+    if (!resultado.success) {
+      return { erro: errosPorCampo(resultado.error).documento ?? 'Documento inválido.' }
+    }
+    const digitos = resultado.data.documento ?? ''
+    mudanca = { document: digitos === '' ? null : digitos }
+  } else if (campo === 'nome') {
     const resultado = esquemaOrganizacao.pick({ nome: true }).safeParse({
       nome: dados.get('nome'),
     })

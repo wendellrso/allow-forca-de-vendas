@@ -26,7 +26,9 @@ export default async function PaginaNovaVenda() {
         .limit(500),
       supabase
         .from('payment_methods')
-        .select('id, name, archived_at')
+        .select(
+          'id, name, kind, allows_installments, max_installments, first_due_days, installment_interval_days, archived_at',
+        )
         .is('archived_at', null)
         .order('name'),
     ])

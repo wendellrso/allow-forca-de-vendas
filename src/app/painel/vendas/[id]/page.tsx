@@ -2,9 +2,16 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { formatarCentavos } from '@/dominio/dinheiro'
+import { dataCurtaDeIso, hojeIso } from '@/dominio/tempo'
 import { ROTULO_CONDICAO, ROTULO_STATUS } from '@/dominio/venda'
-import { type ContaAReceber, type FormaDePagamento, type ItemVenda, type Venda } from '@/lib/tipos'
-import { BarraDeProgresso, classeCartao, Distintivo } from '@/componentes/ui'
+import {
+  type ContaAReceber,
+  type FormaDePagamento,
+  type ItemVenda,
+  type StatusBoleto,
+  type Venda,
+} from '@/lib/tipos'
+import { BarraDeProgresso, classeCartao, Distintivo, type TomDistintivo } from '@/componentes/ui'
 import { Avatar } from '@/componentes/avatar'
 import { TimelineDoPedido, type EtapaDaTimeline } from '@/componentes/timeline'
 import { TOM_POR_STATUS } from '../apresentacao'
@@ -13,6 +20,23 @@ import { AcoesDaVenda, ZonaDeRisco } from './acoes-da-venda'
 export const dynamic = 'force-dynamic'
 
 type ItemComFoto = ItemVenda & { products: { image_url: string | null } | null }
+type ContaComBoleto = ContaAReceber & { boleto_emissions: { status: StatusBoleto } | null }
+
+const ROTULO_BOLETO: Record<StatusBoleto, string> = {
+  simulado: 'Boleto preparado · simulação',
+  solicitado: 'Boleto solicitado',
+  emitido: 'Boleto emitido',
+  erro: 'Falha na emissão',
+  cancelado: 'Boleto cancelado',
+}
+
+const TOM_BOLETO: Record<StatusBoleto, TomDistintivo> = {
+  simulado: 'info',
+  solicitado: 'atencao',
+  emitido: 'sucesso',
+  erro: 'perigo',
+  cancelado: 'neutro',
+}
 
 function etapasDoPedido(venda: Venda): EtapaDaTimeline[] {
   if (venda.status === 'cancelada') {
@@ -60,10 +84,16 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
       .select('*, products(image_url)')
       .eq('sale_id', id)
       .order('product_name'),
-    supabase.from('receivables').select('*').eq('sale_id', id),
+    supabase
+      .from('receivables')
+      .select('*, boleto_emissions(status)')
+      .eq('sale_id', id)
+      .order('installment_number'),
     supabase
       .from('payment_methods')
-      .select('id, name, archived_at')
+      .select(
+        'id, name, kind, allows_installments, max_installments, first_due_days, installment_interval_days, archived_at',
+      )
       .is('archived_at', null)
       .order('name'),
   ])
@@ -74,8 +104,12 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
     notFound()
   }
   const itens = (linhasItens ?? []) as ItemComFoto[]
-  const contas = (linhasContas ?? []) as ContaAReceber[]
-  const conta = contas.find((linha) => linha.status !== 'cancelado')
+  const contas = ((linhasContas ?? []) as unknown as ContaComBoleto[]).filter(
+    (linha) => linha.status !== 'cancelado',
+  )
+  const hoje = hojeIso()
+  const totalRecebido = contas.reduce((soma, conta) => soma + conta.received_cents, 0)
+  const totalAReceber = contas.reduce((soma, conta) => soma + conta.amount_cents, 0)
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -87,10 +121,11 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
         <Avatar nome={venda.customer_name} tamanho="lg" />
         <div className="min-w-0 flex-1">
           <h1 className="font-marca truncate text-2xl font-bold text-zinc-900">
-            Pedido de {venda.customer_name}
+            Venda #{venda.sale_number}
           </h1>
           <p className="text-sm text-zinc-500">
-            {venda.origin === 'catalogo' ? 'Chegou pelo catálogo' : 'Registrado por você'} ·{' '}
+            {venda.customer_name} ·{' '}
+            {venda.origin === 'catalogo' ? 'chegou pelo catálogo' : 'registrada por você'} ·{' '}
             {new Date(venda.created_at).toLocaleString('pt-BR', {
               timeZone: 'America/Maceio',
               day: '2-digit',
@@ -109,7 +144,12 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
       </div>
 
       <div className="mb-4">
-        <AcoesDaVenda vendaId={venda.id} status={venda.status} formas={formas} />
+        <AcoesDaVenda
+          vendaId={venda.id}
+          status={venda.status}
+          formas={formas}
+          totalCentavos={venda.total_cents}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[7fr_5fr]">
@@ -155,40 +195,72 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
             ) : null}
           </div>
 
-          {conta !== undefined ? (
+          {contas.length > 0 ? (
             <div className={classeCartao}>
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="font-bold text-zinc-900">Recebimento</h2>
-                {venda.payment_terms !== null ? (
-                  <span className="text-xs text-zinc-500">
-                    {ROTULO_CONDICAO[venda.payment_terms]}
-                    {venda.payment_methods !== null ? ` · ${venda.payment_methods.name}` : ''}
-                    {venda.due_date !== null
-                      ? ` · vence ${new Date(`${venda.due_date}T12:00:00`).toLocaleDateString('pt-BR')}`
-                      : ''}
-                  </span>
-                ) : null}
+                <h2 className="font-bold text-zinc-900">Pagamento</h2>
+                <span className="text-xs text-zinc-500">
+                  {venda.payment_terms !== null ? ROTULO_CONDICAO[venda.payment_terms] : ''}
+                  {venda.payment_methods !== null ? ` · ${venda.payment_methods.name}` : ''}
+                </span>
               </div>
-              <BarraDeProgresso
-                valor={conta.received_cents}
-                maximo={conta.amount_cents}
-                tom={conta.received_cents === conta.amount_cents ? 'verde' : 'vinho'}
-              />
-              <p className="mt-2 text-sm text-zinc-600">
-                {conta.status === 'recebido' ? (
-                  <span className="font-semibold text-emerald-700">Recebido por completo ✓</span>
-                ) : (
-                  <>
-                    Recebido {formatarCentavos(conta.received_cents)} de{' '}
-                    {formatarCentavos(conta.amount_cents)} —{' '}
-                    <Link
-                      href="/painel/financeiro"
-                      className="text-marca-700 font-semibold hover:underline"
-                    >
-                      registrar recebimento
-                    </Link>
-                  </>
-                )}
+
+              <ul className="divide-y divide-zinc-100">
+                {contas.map((conta) => {
+                  const vencida =
+                    conta.status !== 'recebido' && conta.due_date !== null && conta.due_date < hoje
+                  return (
+                    <li key={conta.id} className="py-2.5">
+                      <Link href={`/painel/financeiro/contas/${conta.id}`} className="group block">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="group-hover:text-marca-700 text-sm font-medium text-zinc-800">
+                            {conta.installment_count > 1
+                              ? `Parcela ${conta.installment_number}/${conta.installment_count}`
+                              : 'Pagamento único'}
+                            {conta.due_date !== null
+                              ? ` · vence ${dataCurtaDeIso(conta.due_date)}`
+                              : ''}
+                          </p>
+                          <p className="text-sm font-semibold text-zinc-900">
+                            {formatarCentavos(conta.amount_cents)}
+                          </p>
+                        </div>
+                        <div className="mt-1.5">
+                          <BarraDeProgresso
+                            valor={conta.received_cents}
+                            maximo={conta.amount_cents}
+                            tom={conta.status === 'recebido' ? 'verde' : 'vinho'}
+                          />
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          {conta.status === 'recebido' ? (
+                            <Distintivo tom="sucesso">Recebida</Distintivo>
+                          ) : vencida ? (
+                            <Distintivo tom="perigo">Vencida</Distintivo>
+                          ) : (
+                            <Distintivo tom="atencao">
+                              {conta.status === 'parcial' ? 'Parcial' : 'Em aberto'}
+                            </Distintivo>
+                          )}
+                          {conta.boleto_emissions !== null ? (
+                            <Distintivo tom={TOM_BOLETO[conta.boleto_emissions.status]}>
+                              🧾 {ROTULO_BOLETO[conta.boleto_emissions.status]}
+                            </Distintivo>
+                          ) : null}
+                        </div>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+
+              <p className="mt-2 flex justify-between border-t border-zinc-200 pt-2 text-sm">
+                <span className="text-zinc-500">Recebido até agora</span>
+                <span
+                  className={`font-bold ${totalRecebido === totalAReceber ? 'text-emerald-700' : 'text-zinc-900'}`}
+                >
+                  {formatarCentavos(totalRecebido)} de {formatarCentavos(totalAReceber)}
+                </span>
               </p>
             </div>
           ) : null}
@@ -228,7 +300,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
                 href={`/painel/clientes/${venda.customer_id}`}
                 className="text-marca-700 mt-2 block text-center text-xs font-semibold hover:underline"
               >
-                Ver cadastro completo
+                Ficha completa do cliente
               </Link>
             ) : null}
           </div>

@@ -4,9 +4,11 @@ import Link from 'next/link'
 import { useActionState, useMemo, useState } from 'react'
 import { formatarCentavos } from '@/dominio/dinheiro'
 import { calcularTotalCentavos } from '@/dominio/venda'
+import { type FormaDePagamento } from '@/lib/tipos'
 import { classeBotaoPrimario, classeEntrada, classeRotulo, MensagemErro } from '@/componentes/ui'
 import { Avatar } from '@/componentes/avatar'
 import { criarVendaManual, type EstadoAcaoVenda } from '../acoes'
+import { CamposDePagamento } from '../campos-de-pagamento'
 
 interface ClienteOpcao {
   id: string
@@ -25,11 +27,6 @@ interface ProdutoOpcao {
   image_url: string | null
 }
 
-interface FormaOpcao {
-  id: string
-  name: string
-}
-
 function normalizar(texto: string): string {
   return texto.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[̀-ͯ]/g, '')
 }
@@ -41,14 +38,13 @@ export function FormularioVendaManual({
 }: {
   clientes: ClienteOpcao[]
   produtos: ProdutoOpcao[]
-  formas: FormaOpcao[]
+  formas: FormaDePagamento[]
 }) {
   const [estado, acao, pendente] = useActionState<EstadoAcaoVenda, FormData>(criarVendaManual, {})
   const [clienteId, definirClienteId] = useState('')
   const [buscaCliente, definirBuscaCliente] = useState('')
   const [buscaProduto, definirBuscaProduto] = useState('')
   const [quantidades, definirQuantidades] = useState<Record<string, number>>({})
-  const [condicao, definirCondicao] = useState<'a_vista' | 'a_prazo'>('a_vista')
 
   const clienteEscolhido = clientes.find((cliente) => cliente.id === clienteId)
 
@@ -295,57 +291,10 @@ export function FormularioVendaManual({
         ) : null}
       </section>
 
-      {/* Passo 3 — Pagamento */}
+      {/* Passo 3 — Pagamento, com parcelas e boleto preparado (simulação) */}
       <section className="rounded-xl border border-zinc-200 bg-white p-4">
         <p className="mb-2 text-sm font-bold text-zinc-900">3 · Pagamento</p>
-        <div className="mb-3 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Condição">
-          <button
-            type="button"
-            onClick={() => definirCondicao('a_vista')}
-            aria-pressed={condicao === 'a_vista'}
-            className={`rounded-lg border px-3 py-2.5 text-sm font-bold ${condicao === 'a_vista' ? 'border-marca-600 bg-marca-50 text-marca-700' : 'border-zinc-200 text-zinc-600'}`}
-          >
-            À vista
-          </button>
-          <button
-            type="button"
-            onClick={() => definirCondicao('a_prazo')}
-            aria-pressed={condicao === 'a_prazo'}
-            className={`rounded-lg border px-3 py-2.5 text-sm font-bold ${condicao === 'a_prazo' ? 'border-marca-600 bg-marca-50 text-marca-700' : 'border-zinc-200 text-zinc-600'}`}
-          >
-            A prazo
-          </button>
-        </div>
-        <input type="hidden" name="condicao" value={condicao} />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label htmlFor="formaId" className={classeRotulo}>
-              Forma de pagamento
-            </label>
-            <select id="formaId" name="formaId" className={classeEntrada} defaultValue="">
-              <option value="">Escolha…</option>
-              {formas.map((forma) => (
-                <option key={forma.id} value={forma.id}>
-                  {forma.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          {condicao === 'a_prazo' ? (
-            <div>
-              <label htmlFor="vencimento" className={classeRotulo}>
-                Vencimento *
-              </label>
-              <input
-                id="vencimento"
-                name="vencimento"
-                type="date"
-                required
-                className={classeEntrada}
-              />
-            </div>
-          ) : null}
-        </div>
+        <CamposDePagamento formas={formas} totalCentavos={totalCentavos} />
         <div className="mt-3">
           <label htmlFor="observacao" className={classeRotulo}>
             Observação

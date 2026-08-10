@@ -70,6 +70,7 @@ export function FormularioDespesa({
     FormData
   >(criarCategoria, {})
   const [criandoNova, definirCriandoNova] = useState(false)
+  const [situacao, definirSituacao] = useState<'pago' | 'a_pagar'>('pago')
   const [categoriaEscolhida, definirCategoriaEscolhida] = useState('')
   const [criadaAplicada, definirCriadaAplicada] = useState<string | undefined>(undefined)
   const referenciaNome = useRef<HTMLInputElement>(null)
@@ -160,12 +161,27 @@ export function FormularioDespesa({
             <label htmlFor="situacao" className={classeRotulo}>
               Situação *
             </label>
-            <select id="situacao" name="situacao" className={classeEntrada}>
-              <option value="pago">Pago</option>
+            <select
+              id="situacao"
+              name="situacao"
+              value={situacao}
+              onChange={(evento) => definirSituacao(evento.target.value as 'pago' | 'a_pagar')}
+              className={classeEntrada}
+            >
+              <option value="pago">Paga</option>
               <option value="a_pagar">A pagar</option>
             </select>
           </div>
         </div>
+        {situacao === 'a_pagar' ? (
+          <div>
+            <label htmlFor="vencimento" className={classeRotulo}>
+              Vencimento
+            </label>
+            <input id="vencimento" name="vencimento" type="date" className={classeEntrada} />
+            <ErroDeCampo mensagem={erros.vencimento} />
+          </div>
+        ) : null}
         <div className="grid grid-cols-[1fr_6rem] gap-3">
           <div>
             <label htmlFor="cidade" className={classeRotulo}>

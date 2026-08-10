@@ -44,6 +44,25 @@ function lerItens(dados: FormData): ItemManual[] | null {
   }
 }
 
+/** Parcelamento vindo do formulário: 1 a 24 parcelas, intervalo 7 a 60 dias. */
+function lerParcelamento(
+  dados: FormData,
+  condicao: string,
+): { parcelas: number; intervaloDias: number } | null {
+  if (condicao !== 'a_prazo') {
+    return { parcelas: 1, intervaloDias: 30 }
+  }
+  const parcelas = Number(String(dados.get('parcelas') ?? '1'))
+  const intervaloDias = Number(String(dados.get('intervaloDias') ?? '30'))
+  if (!Number.isInteger(parcelas) || parcelas < 1 || parcelas > 24) {
+    return null
+  }
+  if (!Number.isInteger(intervaloDias) || intervaloDias < 7 || intervaloDias > 60) {
+    return null
+  }
+  return { parcelas, intervaloDias }
+}
+
 export async function criarVendaManual(
   _anterior: EstadoAcaoVenda,
   dados: FormData,
@@ -68,6 +87,10 @@ export async function criarVendaManual(
   if (condicao === 'a_prazo' && vencimento === '') {
     return { erro: 'Venda a prazo precisa da data de vencimento.' }
   }
+  const parcelamento = lerParcelamento(dados, condicao)
+  if (parcelamento === null) {
+    return { erro: 'Parcelamento inválido: revise as parcelas e o intervalo.' }
+  }
 
   const formaId = String(dados.get('formaId') ?? '')
 
@@ -80,6 +103,8 @@ export async function criarVendaManual(
     p_vencimento: condicao === 'a_prazo' ? vencimento : null,
     p_note: observacao === '' ? null : observacao,
     p_forma: formaId === '' ? null : formaId,
+    p_parcelas: parcelamento.parcelas,
+    p_intervalo_dias: parcelamento.intervaloDias,
   })
 
   if (error !== null) {
@@ -106,6 +131,10 @@ export async function confirmarVenda(
   if (condicao === 'a_prazo' && vencimento === '') {
     return { erro: 'Venda a prazo precisa da data de vencimento.' }
   }
+  const parcelamento = lerParcelamento(dados, condicao)
+  if (parcelamento === null) {
+    return { erro: 'Parcelamento inválido: revise as parcelas e o intervalo.' }
+  }
 
   const formaId = String(dados.get('formaId') ?? '')
 
@@ -115,6 +144,8 @@ export async function confirmarVenda(
     p_condicao: condicao,
     p_vencimento: condicao === 'a_prazo' ? vencimento : null,
     p_forma: formaId === '' ? null : formaId,
+    p_parcelas: parcelamento.parcelas,
+    p_intervalo_dias: parcelamento.intervaloDias,
   })
 
   if (error !== null) {
@@ -187,6 +218,11 @@ function mensagemDoBanco(mensagem: string): string {
     'Transição de venda inválida',
     'Venda não encontrada',
     'Venda a prazo exige data de vencimento',
+    'Boleto sempre gera título com vencimento',
+    'não permite parcelamento',
+    'permite no máximo',
+    'O número de parcelas precisa estar',
+    'Parcelamento exige uma forma',
   ]
   for (const prefixo of conhecidas) {
     if (mensagem.includes(prefixo)) {

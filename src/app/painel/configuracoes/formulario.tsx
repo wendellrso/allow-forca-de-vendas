@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useState, type ReactNode } from 'react'
-import { mascararTelefone } from '@/dominio/mascaras'
+import { mascararDocumento, mascararTelefone } from '@/dominio/mascaras'
 import { classeEntrada, ErroDeCampo } from '@/componentes/ui'
 import { salvarConfiguracao, type EstadoConfiguracoes } from './acoes'
 
@@ -79,6 +79,39 @@ export function CartaoNomeDaEmpresa({ nome }: { nome: string }) {
         Nome da empresa
       </label>
       <input id="nome" name="nome" required defaultValue={nome} className={classeEntrada} />
+    </CartaoDeAjuste>
+  )
+}
+
+export function CartaoDocumento({ documento }: { documento: string | null }) {
+  const [estado, acao, pendente] = useActionState<EstadoConfiguracoes, FormData>(
+    salvarConfiguracao,
+    {},
+  )
+  const [valor, definirValor] = useState(mascararDocumento(documento ?? ''))
+
+  return (
+    <CartaoDeAjuste
+      titulo="CPF ou CNPJ da empresa"
+      descricao="Identifica a empresa nos documentos — e será os dados do beneficiário quando a emissão de boleto for integrada."
+      rodape="Preparado para a integração de boleto; hoje nenhum documento é emitido."
+      acao={acao}
+      pendente={pendente}
+      estado={estado}
+    >
+      <input type="hidden" name="campo" value="documento" />
+      <label htmlFor="documento" className="sr-only">
+        CPF ou CNPJ
+      </label>
+      <input
+        id="documento"
+        name="documento"
+        inputMode="numeric"
+        placeholder="00.000.000/0000-00"
+        value={valor}
+        onChange={(evento) => definirValor(mascararDocumento(evento.target.value))}
+        className={classeEntrada}
+      />
     </CartaoDeAjuste>
   )
 }

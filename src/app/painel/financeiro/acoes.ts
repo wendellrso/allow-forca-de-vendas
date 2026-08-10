@@ -40,6 +40,7 @@ export async function registrarRecebimento(
   }
 
   revalidatePath('/painel/financeiro')
+  revalidatePath(`/painel/financeiro/contas/${contaId}`)
   return {}
 }
 
@@ -64,6 +65,7 @@ export async function salvarDespesa(
     descricao: dados.get('descricao') ?? '',
     valorCentavos,
     data: dados.get('data'),
+    vencimento: dados.get('vencimento') ?? '',
     cidade: dados.get('cidade') ?? '',
     uf: dados.get('uf') ?? '',
     situacao: dados.get('situacao'),
@@ -81,6 +83,7 @@ export async function salvarDespesa(
       despesa.descricao === '' || despesa.descricao === undefined ? null : despesa.descricao,
     amount_cents: despesa.valorCentavos,
     expense_date: despesa.data,
+    due_date: despesa.situacao === 'a_pagar' ? (despesa.vencimento ?? null) : null,
     city: despesa.cidade === '' || despesa.cidade === undefined ? null : despesa.cidade,
     state: despesa.uf ?? null,
     status: despesa.situacao,
@@ -92,6 +95,36 @@ export async function salvarDespesa(
 
   revalidatePath('/painel/financeiro')
   return { sucesso: true }
+}
+
+export async function estornarRecebimento(
+  _anterior: EstadoRecebimento,
+  dados: FormData,
+): Promise<EstadoRecebimento> {
+  await exigirSessao()
+
+  const contaId = String(dados.get('contaId') ?? '')
+  const motivo = String(dados.get('motivo') ?? '').trim()
+  if (contaId === '') {
+    return { erro: 'Conta inválida.' }
+  }
+
+  const supabase = await criarClienteServidor()
+  const { error } = await supabase.rpc('estornar_recebimento', {
+    p_conta: contaId,
+    p_motivo: motivo === '' ? null : motivo,
+  })
+
+  if (error !== null) {
+    if (error.message.includes('não tem recebimento')) {
+      return { erro: 'Esta conta não tem recebimento para estornar.' }
+    }
+    return { erro: 'Não foi possível estornar o recebimento.' }
+  }
+
+  revalidatePath('/painel/financeiro')
+  revalidatePath(`/painel/financeiro/contas/${contaId}`)
+  return {}
 }
 
 export async function marcarDespesaPaga(dados: FormData): Promise<void> {

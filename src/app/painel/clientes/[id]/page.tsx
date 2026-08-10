@@ -2,10 +2,12 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { formatarCentavos } from '@/dominio/dinheiro'
+import { dataCurta, hojeIso } from '@/dominio/tempo'
 import { ROTULO_CONDICAO, ROTULO_STATUS } from '@/dominio/venda'
 import { type Cliente, type ContaAReceber, type Venda } from '@/lib/tipos'
 import { BarraDeProgresso, classeCartao, Distintivo, EstadoVazio } from '@/componentes/ui'
 import { Avatar } from '@/componentes/avatar'
+import { LinhaClicavel } from '@/componentes/linha-clicavel'
 import {
   Tabela,
   CabecalhoDaTabela,
@@ -17,14 +19,6 @@ import { TOM_POR_STATUS } from '../../vendas/apresentacao'
 import { FormularioCliente } from '../formulario'
 
 export const dynamic = 'force-dynamic'
-
-function hojeIso(): string {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Maceio' })
-}
-
-function dataCurta(iso: string): string {
-  return new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'America/Maceio' })
-}
 
 export default async function PaginaFichaDoCliente({
   params,
@@ -177,15 +171,18 @@ export default async function PaginaFichaDoCliente({
           ) : (
             <Tabela>
               <CabecalhoDaTabela>
+                <CabecalhoFixo rotulo="Nº" />
                 <CabecalhoFixo rotulo="Data" />
                 <CabecalhoFixo rotulo="Situação" />
                 <CabecalhoFixo rotulo="Condição" />
                 <CabecalhoFixo rotulo="Total" alinhamento="direita" />
-                <CabecalhoFixo rotulo="" alinhamento="direita" />
               </CabecalhoDaTabela>
               <tbody>
                 {vendas.map((venda) => (
-                  <LinhaDaTabela key={venda.id}>
+                  <LinhaClicavel key={venda.id} href={`/painel/vendas/${venda.id}`}>
+                    <Celula>
+                      <span className="font-mono text-xs text-zinc-400">#{venda.sale_number}</span>
+                    </Celula>
                     <Celula destaque>{dataCurta(venda.created_at)}</Celula>
                     <Celula>
                       <Distintivo tom={TOM_POR_STATUS[venda.status]}>
@@ -198,15 +195,7 @@ export default async function PaginaFichaDoCliente({
                     <Celula alinhamento="direita" destaque>
                       {formatarCentavos(venda.total_cents)}
                     </Celula>
-                    <Celula alinhamento="direita">
-                      <Link
-                        href={`/painel/vendas/${venda.id}`}
-                        className="text-marca-700 text-xs font-semibold hover:underline"
-                      >
-                        Ver pedido
-                      </Link>
-                    </Celula>
-                  </LinhaDaTabela>
+                  </LinhaClicavel>
                 ))}
               </tbody>
             </Tabela>

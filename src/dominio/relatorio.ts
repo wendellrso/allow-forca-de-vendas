@@ -95,26 +95,33 @@ export interface ResultadoDoPeriodo {
   despesasPorCategoria: TotalPorCategoria[]
 }
 
+/** Agrupamento único de despesas por categoria — usado aqui e na DRE. */
+export function agruparDespesasPorCategoria(
+  despesas: readonly DespesaParaRelatorio[],
+): TotalPorCategoria[] {
+  const porCategoria = new Map<string, number>()
+  for (const despesa of despesas) {
+    porCategoria.set(
+      despesa.categoria,
+      (porCategoria.get(despesa.categoria) ?? 0) + despesa.valorCentavos,
+    )
+  }
+  return [...porCategoria.entries()]
+    .map(([categoria, totalCentavos]) => ({ categoria, totalCentavos }))
+    .sort((a, b) => b.totalCentavos - a.totalCentavos)
+}
+
 /** O número que a planilha nunca entregava: vendas menos custo de vender. */
 export function calcularResultadoDoPeriodo(
   vendas: readonly VendaParaRelatorio[],
   despesas: readonly DespesaParaRelatorio[],
 ): ResultadoDoPeriodo {
   const totalVendido = vendas.reduce((total, venda) => total + venda.totalCentavos, 0)
-
-  const porCategoria = new Map<string, number>()
-  let totalDespesas = 0
-  for (const despesa of despesas) {
-    porCategoria.set(
-      despesa.categoria,
-      (porCategoria.get(despesa.categoria) ?? 0) + despesa.valorCentavos,
-    )
-    totalDespesas += despesa.valorCentavos
-  }
-
-  const despesasPorCategoria = [...porCategoria.entries()]
-    .map(([categoria, totalCentavos]) => ({ categoria, totalCentavos }))
-    .sort((a, b) => b.totalCentavos - a.totalCentavos)
+  const despesasPorCategoria = agruparDespesasPorCategoria(despesas)
+  const totalDespesas = despesasPorCategoria.reduce(
+    (total, linha) => total + linha.totalCentavos,
+    0,
+  )
 
   return {
     totalVendidoCentavos: totalVendido,
