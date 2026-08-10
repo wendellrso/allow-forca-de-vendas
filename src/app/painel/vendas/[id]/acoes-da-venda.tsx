@@ -11,10 +11,13 @@ import {
   classeRotulo,
   MensagemErro,
 } from '@/componentes/ui'
-import { cancelarVenda, confirmarVenda, entregarVenda, type EstadoAcaoVenda } from '../acoes'
+import { cancelarVenda, confirmarVenda, type EstadoAcaoVenda } from '../acoes'
 import { CamposDePagamento } from '../campos-de-pagamento'
 
-/** Ações que movem o pedido adiante: confirmar (com pagamento) e entregar. */
+/**
+ * Ação que move o pedido adiante: confirmar com pagamento. Confirmada é o
+ * estado final do fluxo feliz — a entrega é da empresa, não do sistema.
+ */
 export function AcoesDaVenda({
   vendaId,
   status,
@@ -30,41 +33,25 @@ export function AcoesDaVenda({
     confirmarVenda,
     {},
   )
-  const [estadoEntregar, acaoEntregar, entregando] = useActionState<EstadoAcaoVenda, FormData>(
-    entregarVenda,
-    {},
-  )
 
-  if (status === 'entregue' || status === 'cancelada') {
+  if (status !== 'aguardando_confirmacao') {
     return null
   }
 
   return (
     <div className="border-marca-100 bg-marca-50/60 rounded-xl border p-4">
-      <MensagemErro mensagem={estadoConfirmar.erro ?? estadoEntregar.erro} />
+      <MensagemErro mensagem={estadoConfirmar.erro} />
 
-      {status === 'aguardando_confirmacao' ? (
-        <form action={acaoConfirmar} className="space-y-3">
-          <p className="text-sm font-semibold text-zinc-800">
-            Próximo passo: confirmar o pedido — o estoque baixa e o contas a receber é criado.
-          </p>
-          <input type="hidden" name="vendaId" value={vendaId} />
-          <CamposDePagamento formas={formas} totalCentavos={totalCentavos} />
-          <button type="submit" disabled={confirmando} className={classeBotaoPrimario}>
-            {confirmando ? 'Confirmando…' : 'Confirmar pedido'}
-          </button>
-        </form>
-      ) : (
-        <form action={acaoEntregar} className="flex flex-wrap items-center gap-3">
-          <p className="flex-1 text-sm font-semibold text-zinc-800">
-            Próximo passo: marcar como entregue quando o pedido chegar ao cliente.
-          </p>
-          <input type="hidden" name="vendaId" value={vendaId} />
-          <button type="submit" disabled={entregando} className={classeBotaoPrimario}>
-            {entregando ? 'Registrando…' : 'Marcar como entregue'}
-          </button>
-        </form>
-      )}
+      <form action={acaoConfirmar} className="space-y-3">
+        <p className="text-sm font-semibold text-zinc-800">
+          Próximo passo: confirmar o pedido — o estoque baixa e o contas a receber é criado.
+        </p>
+        <input type="hidden" name="vendaId" value={vendaId} />
+        <CamposDePagamento formas={formas} totalCentavos={totalCentavos} />
+        <button type="submit" disabled={confirmando} className={classeBotaoPrimario}>
+          {confirmando ? 'Confirmando…' : 'Confirmar pedido'}
+        </button>
+      </form>
     </div>
   )
 }

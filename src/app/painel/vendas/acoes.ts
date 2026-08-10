@@ -157,27 +157,6 @@ export async function confirmarVenda(
   return {}
 }
 
-export async function entregarVenda(
-  _anterior: EstadoAcaoVenda,
-  dados: FormData,
-): Promise<EstadoAcaoVenda> {
-  await exigirSessao()
-  const vendaId = String(dados.get('vendaId') ?? '')
-  if (vendaId === '') {
-    return { erro: 'Venda inválida.' }
-  }
-
-  const supabase = await criarClienteServidor()
-  const { error } = await supabase.rpc('entregar_venda', { p_venda: vendaId })
-  if (error !== null) {
-    return { erro: mensagemDoBanco(error.message) }
-  }
-
-  revalidatePath(`/painel/vendas/${vendaId}`)
-  revalidatePath('/painel/vendas')
-  return {}
-}
-
 export async function cancelarVenda(
   _anterior: EstadoAcaoVenda,
   dados: FormData,

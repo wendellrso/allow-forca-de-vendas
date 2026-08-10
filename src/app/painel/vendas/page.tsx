@@ -30,6 +30,9 @@ const CAMPOS = ['sale_number', 'created_at', 'customer_name', 'city', 'total_cen
 
 const PERIODOS_DA_LISTA = ['todos', 'hoje', 'este_mes', 'mes_anterior'] as const
 
+/** Situações da operação dela: a entrega é da empresa, não do sistema. */
+const STATUS_DA_OPERACAO = ['aguardando_confirmacao', 'confirmada', 'cancelada'] as const
+
 interface ParametrosDaPagina {
   status?: string
   periodo?: string
@@ -155,7 +158,7 @@ export default async function PaginaVendas({
     <div>
       <TituloPagina
         titulo="Vendas"
-        subtitulo="Confirme os pedidos que chegaram e acompanhe as entregas."
+        subtitulo="Confirme os pedidos que chegaram e acompanhe os recebimentos."
         acao={
           <Link href="/painel/vendas/nova" className={classeBotaoPrimario}>
             + Nova venda
@@ -163,8 +166,8 @@ export default async function PaginaVendas({
         }
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-2 lg:grid-cols-5">
-        {STATUS_VENDA.map((situacao) => {
+      <div className="mb-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
+        {STATUS_DA_OPERACAO.map((situacao) => {
           const ativo = filtroStatus === situacao
           const destaque = situacao === 'aguardando_confirmacao' && totalPorStatus[situacao] > 0
           return (

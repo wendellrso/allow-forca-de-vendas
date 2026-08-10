@@ -48,22 +48,13 @@ function etapasDoPedido(venda: Venda): EtapaDaTimeline[] {
       { rotulo: 'Cancelado', data: venda.canceled_at, estado: 'cancelada' },
     ]
   }
+  // A entrega é da empresa, não do sistema: confirmada encerra o fluxo feliz.
   return [
     { rotulo: 'Pedido criado', data: venda.created_at, estado: 'feita' },
     {
       rotulo: 'Confirmado',
       data: venda.confirmed_at,
       estado: venda.confirmed_at !== null ? 'feita' : 'atual',
-    },
-    {
-      rotulo: 'Entregue',
-      data: venda.delivered_at,
-      estado:
-        venda.delivered_at !== null
-          ? 'feita'
-          : venda.status === 'confirmada'
-            ? 'atual'
-            : 'pendente',
     },
   ]
 }
