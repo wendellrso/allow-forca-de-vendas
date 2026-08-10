@@ -8,7 +8,9 @@ import {
   type DespesaParaRelatorio,
   type VendaParaRelatorio,
 } from '@/dominio/relatorio'
+import { somarDias } from '@/dominio/parcelas'
 import { serieDiaria } from '@/dominio/serie'
+import { hojeIso } from '@/dominio/tempo'
 import {
   classeBotaoSecundario,
   classeCartao,
@@ -25,18 +27,8 @@ export const dynamic = 'force-dynamic'
 const FUSO = 'America/Maceio'
 const COR_DE_DADO = '#9c3660'
 
-function hojeIso(): string {
-  return new Date().toLocaleDateString('en-CA', { timeZone: FUSO })
-}
-
 function primeiroDiaDoMes(): string {
   return `${hojeIso().slice(0, 8)}01`
-}
-
-function deslocarDias(dia: string, dias: number): string {
-  const data = new Date(`${dia}T12:00:00Z`)
-  data.setUTCDate(data.getUTCDate() + dias)
-  return data.toISOString().slice(0, 10)
 }
 
 function dataValida(texto: string | undefined): string | null {
@@ -127,7 +119,7 @@ export default async function PaginaRelatorios({
       : null
 
   const esteMes = primeiroDiaDoMes()
-  const trintaDias = deslocarDias(hoje, -29)
+  const trintaDias = somarDias(hoje, -29)
   const periodoAtivo =
     de === esteMes && ate === hoje ? 'mes' : de === trintaDias && ate === hoje ? '30' : 'outro'
 
@@ -209,6 +201,12 @@ export default async function PaginaRelatorios({
             {formatarCentavos(resultado.resultadoCentavos)}
           </p>
           <p className="text-xs text-zinc-500">Resultado (vendas − despesas)</p>
+          <Link
+            href="/painel/financeiro?aba=resultado"
+            className="text-marca-700 mt-1 inline-block text-xs font-semibold hover:underline"
+          >
+            Ver DRE com custo dos produtos →
+          </Link>
         </div>
       </div>
 
