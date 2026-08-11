@@ -14,6 +14,9 @@ interface RespostaDeErroAsaas {
   errors?: { description?: string }[]
 }
 
+/** Identifica o aplicativo nas requisições ao provedor (exigido pelo Asaas). */
+const IDENTIFICACAO_DO_APLICATIVO = 'AllowForcaDeVendas/1.0'
+
 async function chamarAsaas<T>(
   config: ConfiguracaoAsaas,
   caminho: string,
@@ -23,6 +26,9 @@ async function chamarAsaas<T>(
     ...inicializacao,
     headers: {
       'Content-Type': 'application/json',
+      // O Asaas recusa requisição sem User-Agent e o runtime da Cloudflare
+      // não manda nenhum por conta própria: sem isto, nada é emitido.
+      'User-Agent': IDENTIFICACAO_DO_APLICATIVO,
       access_token: config.chaveApi,
       ...inicializacao?.headers,
     },

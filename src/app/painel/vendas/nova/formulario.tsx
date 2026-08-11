@@ -92,6 +92,13 @@ export function FormularioVendaManual({
     })),
   )
 
+  // Botão desabilitado sem dizer o motivo é beco sem saída: a tela nomeia o
+  // que ainda falta, na ordem dos passos.
+  const pendencias = [
+    ...(clienteId === '' ? ['escolher o cliente'] : []),
+    ...(itens.length === 0 ? ['adicionar ao menos um produto'] : []),
+  ]
+
   return (
     <form action={acao} className="space-y-4" noValidate>
       <MensagemErro mensagem={estado.erro} />
@@ -310,9 +317,9 @@ export function FormularioVendaManual({
       </section>
 
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-zinc-500">
-          {itens.length === 0
-            ? 'Adicione produtos para continuar.'
+        <p className={`text-sm ${pendencias.length > 0 ? 'text-amber-700' : 'text-zinc-500'}`}>
+          {pendencias.length > 0
+            ? `Falta ${pendencias.join(' e ')}.`
             : `${itens.length} ${itens.length === 1 ? 'produto' : 'produtos'} · ${formatarCentavos(totalCentavos)}`}
         </p>
         <button

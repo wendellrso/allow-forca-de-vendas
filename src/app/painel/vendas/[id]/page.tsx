@@ -6,14 +6,18 @@ import { formatarCentavos } from '@/dominio/dinheiro'
 import { dataCurtaDeIso, hojeIso } from '@/dominio/tempo'
 import { ROTULO_CONDICAO, ROTULO_STATUS } from '@/dominio/venda'
 import {
+  ROTULO_TIPO_DE_COBRANCA,
   type ContaAReceber,
   type FormaDePagamento,
   type ItemVenda,
+  type PayloadDeBoleto,
   type StatusBoleto,
+  type TipoDeCobranca,
   type Venda,
 } from '@/lib/tipos'
 import { BarraDeProgresso, classeCartao, Distintivo, type TomDistintivo } from '@/componentes/ui'
 import { Avatar } from '@/componentes/avatar'
+import { BlocoDaCobranca } from '@/componentes/cobranca'
 import { TimelineDoPedido, type EtapaDaTimeline } from '@/componentes/timeline'
 import { TOM_POR_STATUS } from '../apresentacao'
 import { AcoesDaVenda, ZonaDeRisco } from './acoes-da-venda'
@@ -21,7 +25,13 @@ import { AcoesDaVenda, ZonaDeRisco } from './acoes-da-venda'
 export const dynamic = 'force-dynamic'
 
 type ItemComFoto = ItemVenda & { products: { image_url: string | null } | null }
-type ContaComBoleto = ContaAReceber & { boleto_emissions: { status: StatusBoleto } | null }
+type ContaComBoleto = ContaAReceber & {
+  boleto_emissions: {
+    status: StatusBoleto
+    billing_type: TipoDeCobranca
+    payload: PayloadDeBoleto
+  } | null
+}
 
 /**
  * Sem provedor configurado, "preparada" é simulação e o rótulo precisa dizer
@@ -85,7 +95,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
       .order('product_name'),
     supabase
       .from('receivables')
-      .select('*, boleto_emissions(status)')
+      .select('*, boleto_emissions(status, billing_type, payload)')
       .eq('sale_id', id)
       .order('installment_number'),
     supabase
@@ -108,6 +118,12 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
   )
   const hoje = hojeIso()
   const emissaoReal = configuracaoAsaas() !== null
+  // Pagamento único e cobrança emitida: o que o cliente precisa para pagar
+  // fica aqui mesmo, sem obrigar um desvio pelo Financeiro. Parcelado, cada
+  // parcela tem a própria cobrança e o lugar delas é a tela da conta.
+  const contaUnica = contas.length === 1 ? contas[0] : undefined
+  const cobrancaDoPagamentoUnico =
+    contaUnica?.boleto_emissions?.status === 'emitido' ? contaUnica.boleto_emissions : null
   const totalRecebido = contas.reduce((soma, conta) => soma + conta.received_cents, 0)
   const totalAReceber = contas.reduce((soma, conta) => soma + conta.amount_cents, 0)
 
@@ -263,6 +279,22 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
                   {formatarCentavos(totalRecebido)} de {formatarCentavos(totalAReceber)}
                 </span>
               </p>
+            </div>
+          ) : null}
+
+          {cobrancaDoPagamentoUnico !== null ? (
+            <div className={classeCartao}>
+              <h2 className="font-bold text-zinc-900">
+                🧾 {ROTULO_TIPO_DE_COBRANCA[cobrancaDoPagamentoUnico.billing_type]} para o cliente
+              </h2>
+              <p className="mt-0.5 text-sm text-zinc-500">
+                Mostre o QR code na tela, mande o código pelo WhatsApp ou copie e cole. A baixa é
+                automática quando o pagamento cair.
+              </p>
+              <BlocoDaCobranca
+                payload={cobrancaDoPagamentoUnico.payload}
+                telefoneDoCliente={venda.customer_phone}
+              />
             </div>
           ) : null}
         </div>

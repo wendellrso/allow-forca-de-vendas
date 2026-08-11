@@ -12,12 +12,8 @@ import {
 } from '@/lib/tipos'
 import { configuracaoAsaas } from '@/lib/env'
 import { BarraDeProgresso, classeCartao, Distintivo } from '@/componentes/ui'
-import {
-  BotaoEstornar,
-  BotaoGerarBoleto,
-  BotoesDoBoleto,
-  FormularioReceber,
-} from './acoes-da-conta'
+import { BlocoDaCobranca } from '@/componentes/cobranca'
+import { BotaoEstornar, BotaoGerarBoleto, FormularioReceber } from './acoes-da-conta'
 
 export const dynamic = 'force-dynamic'
 
@@ -169,7 +165,7 @@ export default async function PaginaConta({ params }: { params: Promise<{ id: st
             </Distintivo>
           </div>
           {conta.boleto_emissions.status === 'emitido' ? (
-            <BotoesDoBoleto
+            <BlocoDaCobranca
               payload={conta.boleto_emissions.payload}
               telefoneDoCliente={conta.sales?.customer_phone ?? null}
             />
