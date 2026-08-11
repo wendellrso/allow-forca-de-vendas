@@ -30,7 +30,19 @@ export async function gerarBoleto(
     const resultado = await emitirBoletosPendentes(supabase, { emissaoId })
     if (resultado.emitidos === 0) {
       revalidatePath(`/painel/financeiro/contas/${contaId}`)
-      return { erro: 'A emissão não concluiu — o motivo aparece no cartão do boleto.' }
+      // Repetir "veja o motivo ao lado" não ajuda ninguém: o motivo vem junto.
+      const { data } = await supabase
+        .from('boleto_emissions')
+        .select('payload')
+        .eq('id', emissaoId)
+        .maybeSingle()
+      const motivo = (data as { payload?: { motivo?: string } } | null)?.payload?.motivo
+      return {
+        erro:
+          motivo !== undefined && motivo !== ''
+            ? `A emissão não concluiu: ${motivo}`
+            : 'A emissão não concluiu. Tente novamente em alguns instantes.',
+      }
     }
   } catch {
     return { erro: 'Não foi possível falar com o provedor. Tente novamente.' }
