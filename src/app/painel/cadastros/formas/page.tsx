@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { type Metadata } from 'next'
+import { configuracaoAsaas } from '@/lib/env'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { type FormaDePagamento } from '@/lib/tipos'
-import { criarFormaDePagamento } from '../acoes'
+import { criarFormaDePagamento, restaurarFormaDePagamento } from '../acoes'
+import { SecaoDeArquivados } from '../arquivados'
 import { ComposerDeItem } from '../formularios'
 import { FormaComConfiguracao } from './configurar'
 
@@ -16,10 +18,12 @@ export default async function PaginaFormasDePagamento() {
     .select(
       'id, name, kind, allows_installments, max_installments, first_due_days, installment_interval_days, archived_at',
     )
-    .is('archived_at', null)
     .order('name')
 
-  const formas = (data ?? []) as FormaDePagamento[]
+  const todas = (data ?? []) as FormaDePagamento[]
+  const formas = todas.filter((forma) => forma.archived_at === null)
+  const arquivadas = todas.filter((forma) => forma.archived_at !== null)
+  const emissaoReal = configuracaoAsaas() !== null
 
   return (
     <div className="mx-auto max-w-xl py-2">
@@ -50,10 +54,17 @@ export default async function PaginaFormasDePagamento() {
       ) : (
         <ul className="space-y-2">
           {formas.map((forma) => (
-            <FormaComConfiguracao key={forma.id} forma={forma} />
+            <FormaComConfiguracao key={forma.id} forma={forma} emissaoReal={emissaoReal} />
           ))}
         </ul>
       )}
+
+      <SecaoDeArquivados
+        itens={arquivadas}
+        acaoRestaurar={restaurarFormaDePagamento}
+        rotuloSingular="forma arquivada"
+        rotuloPlural="formas arquivadas"
+      />
 
       <p className="mt-5 text-center text-xs leading-relaxed text-zinc-400">
         Arquivar tira a forma das novas vendas — as vendas antigas continuam com ela.

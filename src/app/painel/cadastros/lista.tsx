@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { type EstadoItemDeCadastro } from './acoes'
+import { SecaoDeArquivados } from './arquivados'
 import { ComposerDeItem } from './formularios'
 
 interface ItemDeApoio {
@@ -15,20 +16,28 @@ export function PaginaDeCadastroDeApoio({
   titulo,
   descricao,
   itens,
+  itensArquivados,
   emojiDoItem,
   acaoCriar,
   acaoArquivar,
+  acaoRestaurar,
   placeholder,
   dica,
+  rotuloArquivadoSingular,
+  rotuloArquivadoPlural,
 }: {
   titulo: string
   descricao: string
   itens: ItemDeApoio[]
+  itensArquivados: ItemDeApoio[]
   emojiDoItem: (nome: string) => string
   acaoCriar: (anterior: EstadoItemDeCadastro, dados: FormData) => Promise<EstadoItemDeCadastro>
   acaoArquivar: (dados: FormData) => Promise<void>
+  acaoRestaurar: (dados: FormData) => Promise<void>
   placeholder: string
   dica: string
+  rotuloArquivadoSingular: string
+  rotuloArquivadoPlural: string
 }) {
   return (
     <div className="mx-auto max-w-xl py-2">
@@ -82,6 +91,13 @@ export function PaginaDeCadastroDeApoio({
           ))}
         </ul>
       )}
+
+      <SecaoDeArquivados
+        itens={itensArquivados}
+        acaoRestaurar={acaoRestaurar}
+        rotuloSingular={rotuloArquivadoSingular}
+        rotuloPlural={rotuloArquivadoPlural}
+      />
 
       <p className="mt-5 text-center text-xs leading-relaxed text-zinc-400">{dica}</p>
     </div>

@@ -1,7 +1,7 @@
 import { type Metadata } from 'next'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { type CategoriaDeDespesa } from '@/lib/tipos'
-import { criarCategoria, arquivarCategoria } from '../../financeiro/acoes'
+import { criarCategoria, arquivarCategoria, restaurarCategoria } from '../../financeiro/acoes'
 import { PaginaDeCadastroDeApoio } from '../lista'
 
 export const metadata: Metadata = { title: 'Categorias de despesa' }
@@ -29,21 +29,24 @@ export default async function PaginaCategoriasDeDespesa() {
   const { data } = await supabase
     .from('expense_categories')
     .select('id, name, archived_at')
-    .is('archived_at', null)
     .order('name')
 
-  const categorias = (data ?? []) as CategoriaDeDespesa[]
+  const todas = (data ?? []) as CategoriaDeDespesa[]
 
   return (
     <PaginaDeCadastroDeApoio
       titulo="Categorias de despesa"
       descricao="Onde o dinheiro vai. Organizam o financeiro e o resultado do período nas viagens."
-      itens={categorias}
+      itens={todas.filter((categoria) => categoria.archived_at === null)}
+      itensArquivados={todas.filter((categoria) => categoria.archived_at !== null)}
       emojiDoItem={emojiDaCategoria}
       acaoCriar={criarCategoria}
       acaoArquivar={arquivarCategoria}
+      acaoRestaurar={restaurarCategoria}
       placeholder="Ex.: Pedágio"
       dica="Arquivar tira a categoria das novas despesas — as antigas continuam com ela."
+      rotuloArquivadoSingular="categoria arquivada"
+      rotuloArquivadoPlural="categorias arquivadas"
     />
   )
 }

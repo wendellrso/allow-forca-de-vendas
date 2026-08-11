@@ -4,13 +4,14 @@ import { useState } from 'react'
 import { formatarCentavos } from '@/dominio/dinheiro'
 import { montarParcelas, somarDias } from '@/dominio/parcelas'
 import { dataCurtaDeIso, hojeIso } from '@/dominio/tempo'
-import { type FormaDePagamento } from '@/lib/tipos'
+import { formaGeraCobranca, type FormaDePagamento } from '@/lib/tipos'
 import { classeEntrada, classeRotulo } from '@/componentes/ui'
 
 /**
  * Condição, forma, parcelas e vencimentos — o mesmo bloco na Nova venda e na
- * confirmação do pedido. Boleto força a condição a prazo e declara se a
- * emissão será real (provedor configurado) ou simulada.
+ * confirmação do pedido. Boleto força a condição a prazo. Nas formas que o
+ * provedor cobra (Pix, cartão de crédito, boleto), a venda à vista ainda
+ * pergunta o essencial: gerar a cobrança ou o dinheiro já está com ela.
  */
 export function CamposDePagamento({
   formas,
@@ -26,13 +27,17 @@ export function CamposDePagamento({
   const [parcelas, definirParcelas] = useState(1)
   const [vencimento, definirVencimento] = useState('')
   const [intervalo, definirIntervalo] = useState(30)
+  const [cobrar, definirCobrar] = useState(true)
 
   const forma = formas.find((opcao) => opcao.id === formaId)
   const ehBoleto = forma?.kind === 'boleto'
-  const geraCobranca =
-    forma !== undefined && ['boleto', 'pix', 'cartao_credito'].includes(forma.kind)
+  const geraCobranca = forma !== undefined && formaGeraCobranca(forma.kind)
   const permiteParcelas = condicao === 'a_prazo' && (forma?.allows_installments ?? false)
   const maximoDeParcelas = forma?.max_installments ?? 1
+
+  // À vista só cobra quando a forma tem cobrança no provedor; fora disso, o
+  // dinheiro já entrou e a venda nasce quitada.
+  const cobrarAVista = condicao === 'a_vista' && geraCobranca && cobrar
 
   function aoEscolherForma(id: string) {
     definirFormaId(id)
@@ -58,10 +63,25 @@ export function CamposDePagamento({
       ? montarParcelas(totalCentavos, parcelas, vencimento, intervalo)
       : []
 
+  const notaDaCobranca = emissaoReal ? (
+    <>
+      🧾 {previa.length > 1 ? 'As cobranças (uma por parcela) serão' : 'A cobrança será'}{' '}
+      <span className="font-semibold">emitida{previa.length > 1 ? 's' : ''} no Asaas</span> na
+      confirmação — com link, QR code do Pix e baixa automática quando o cliente pagar.
+    </>
+  ) : (
+    <>
+      🧾 {previa.length > 1 ? 'As cobranças serão' : 'A cobrança será'}{' '}
+      <span className="font-semibold">preparada{previa.length > 1 ? 's' : ''} em simulação</span> —
+      nada é emitido de verdade nesta etapa.
+    </>
+  )
+
   return (
     <div className="space-y-3">
       <input type="hidden" name="condicao" value={condicao} />
       <input type="hidden" name="intervaloDias" value={intervalo} />
+      <input type="hidden" name="cobrar" value={cobrarAVista ? 'sim' : 'nao'} />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
@@ -128,6 +148,39 @@ export function CamposDePagamento({
           </select>
         </div>
       </div>
+
+      {condicao === 'a_vista' && geraCobranca ? (
+        <div>
+          <span className={classeRotulo}>Recebimento *</span>
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1" role="group">
+            <button
+              type="button"
+              onClick={() => definirCobrar(true)}
+              aria-pressed={cobrar}
+              className={`rounded-lg px-3 py-2 text-sm font-semibold ${
+                cobrar ? 'text-marca-800 bg-white shadow-sm' : 'text-zinc-500 hover:text-zinc-800'
+              }`}
+            >
+              Gerar cobrança
+            </button>
+            <button
+              type="button"
+              onClick={() => definirCobrar(false)}
+              aria-pressed={!cobrar}
+              className={`rounded-lg px-3 py-2 text-sm font-semibold ${
+                !cobrar ? 'text-marca-800 bg-white shadow-sm' : 'text-zinc-500 hover:text-zinc-800'
+              }`}
+            >
+              Já recebi
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-zinc-400">
+            {cobrar
+              ? 'A conta fica em aberto até o cliente pagar — nada entra no caixa antes disso.'
+              : 'O dinheiro já está com você: a venda nasce quitada e nenhuma cobrança é gerada.'}
+          </p>
+        </div>
+      ) : null}
 
       {condicao === 'a_prazo' ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -214,22 +267,14 @@ export function CamposDePagamento({
           </ul>
           {geraCobranca ? (
             <p className="mt-2 border-t border-zinc-200 pt-2 text-xs text-zinc-500">
-              {emissaoReal ? (
-                <>
-                  🧾 As cobranças (uma por parcela) serão{' '}
-                  <span className="font-semibold">emitidas no Asaas</span> na confirmação — prontas
-                  para enviar ao cliente.
-                </>
-              ) : (
-                <>
-                  🧾 As cobranças serão{' '}
-                  <span className="font-semibold">preparadas em simulação</span> — nada é emitido de
-                  verdade nesta etapa.
-                </>
-              )}
+              {notaDaCobranca}
             </p>
           ) : null}
         </div>
+      ) : cobrarAVista ? (
+        <p className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-500">
+          {notaDaCobranca}
+        </p>
       ) : null}
     </div>
   )

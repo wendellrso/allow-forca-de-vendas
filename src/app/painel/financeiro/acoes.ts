@@ -220,16 +220,26 @@ export async function criarCategoria(
 }
 
 export async function arquivarCategoria(dados: FormData): Promise<void> {
+  await definirArquivamentoDaCategoria(dados, new Date().toISOString())
+}
+
+/** Arquivar não pode ser sem volta: a categoria volta às novas despesas. */
+export async function restaurarCategoria(dados: FormData): Promise<void> {
+  await definirArquivamentoDaCategoria(dados, null)
+}
+
+async function definirArquivamentoDaCategoria(
+  dados: FormData,
+  arquivadaEm: string | null,
+): Promise<void> {
   await exigirSessao()
   const id = dados.get('id')
   if (typeof id !== 'string' || id === '') {
     return
   }
   const supabase = await criarClienteServidor()
-  await supabase
-    .from('expense_categories')
-    .update({ archived_at: new Date().toISOString() })
-    .eq('id', id)
+  await supabase.from('expense_categories').update({ archived_at: arquivadaEm }).eq('id', id)
   revalidatePath('/painel/financeiro')
   revalidatePath('/painel/cadastros')
+  revalidatePath('/painel/cadastros/categorias')
 }

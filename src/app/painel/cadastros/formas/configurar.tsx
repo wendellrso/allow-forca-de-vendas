@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import {
+  formaGeraCobranca,
   ROTULO_TIPO_DE_FORMA,
   TIPOS_DE_FORMA,
   type FormaDePagamento,
@@ -31,7 +32,13 @@ const EMOJI_POR_TIPO: Record<TipoDeForma, string> = {
 }
 
 /** Linha da forma com a configuração que sustenta a automação de pagamento. */
-export function FormaComConfiguracao({ forma }: { forma: FormaDePagamento }) {
+export function FormaComConfiguracao({
+  forma,
+  emissaoReal,
+}: {
+  forma: FormaDePagamento
+  emissaoReal: boolean
+}) {
   const [aberto, definirAberto] = useState(false)
   const [estado, acao, pendente] = useActionState<EstadoConfiguracaoDaForma, FormData>(
     salvarConfiguracaoDaForma,
@@ -63,7 +70,11 @@ export function FormaComConfiguracao({ forma }: { forma: FormaDePagamento }) {
           {forma.allows_installments ? (
             <Distintivo tom="info">até {forma.max_installments}×</Distintivo>
           ) : null}
-          {forma.kind === 'boleto' ? <Distintivo tom="atencao">emissão simulada</Distintivo> : null}
+          {formaGeraCobranca(forma.kind) ? (
+            <Distintivo tom={emissaoReal ? 'sucesso' : 'atencao'}>
+              {emissaoReal ? 'cobrança no Asaas' : 'cobrança simulada'}
+            </Distintivo>
+          ) : null}
         </div>
       </div>
       <button
@@ -113,8 +124,10 @@ export function FormaComConfiguracao({ forma }: { forma: FormaDePagamento }) {
             </select>
             <p className="mt-1 text-xs text-zinc-400">
               {tipo === 'boleto'
-                ? 'Boleto sempre gera título com vencimento e prepara a emissão (hoje em simulação; um provedor real assume depois).'
-                : 'O tipo diz ao sistema como esta forma se comporta na venda.'}
+                ? `Boleto sempre gera título com vencimento e ${emissaoReal ? 'emite a cobrança no Asaas' : 'prepara a cobrança em simulação'}.`
+                : formaGeraCobranca(tipo)
+                  ? `Nas vendas com esta forma o sistema ${emissaoReal ? 'emite a cobrança no Asaas' : 'prepara a cobrança em simulação'} — inclusive à vista, quando você escolhe cobrar.`
+                  : 'O tipo diz ao sistema como esta forma se comporta na venda.'}
             </p>
           </div>
 

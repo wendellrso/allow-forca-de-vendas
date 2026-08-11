@@ -57,6 +57,14 @@ function lerItens(dados: FormData): ItemManual[] | null {
   }
 }
 
+/**
+ * Cobrar pelo provedor só faz sentido à vista: a prazo a conta já nasce em
+ * aberto e a cobrança acompanha cada parcela.
+ */
+function lerCobranca(dados: FormData, condicao: string): boolean {
+  return condicao === 'a_vista' && dados.get('cobrar') === 'sim'
+}
+
 /** Parcelamento vindo do formulário: 1 a 24 parcelas, intervalo 7 a 60 dias. */
 function lerParcelamento(
   dados: FormData,
@@ -118,6 +126,7 @@ export async function criarVendaManual(
     p_forma: formaId === '' ? null : formaId,
     p_parcelas: parcelamento.parcelas,
     p_intervalo_dias: parcelamento.intervaloDias,
+    p_cobrar: lerCobranca(dados, condicao),
   })
 
   if (error !== null) {
@@ -161,6 +170,7 @@ export async function confirmarVenda(
     p_forma: formaId === '' ? null : formaId,
     p_parcelas: parcelamento.parcelas,
     p_intervalo_dias: parcelamento.intervaloDias,
+    p_cobrar: lerCobranca(dados, condicao),
   })
 
   if (error !== null) {
@@ -219,6 +229,7 @@ function mensagemDoBanco(mensagem: string): string {
     'permite no máximo',
     'O número de parcelas precisa estar',
     'Parcelamento exige uma forma',
+    'não gera cobrança',
   ]
   for (const prefixo of conhecidas) {
     if (mensagem.includes(prefixo)) {

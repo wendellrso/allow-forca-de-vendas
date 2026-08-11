@@ -66,6 +66,7 @@ export interface PayloadDoBoletoEmitido {
   url_pdf: string | null
   linha_digitavel: string | null
   pix_copia_e_cola: string | null
+  pix_qr_base64: string | null
 }
 
 async function emitirCobranca(
@@ -110,14 +111,18 @@ async function emitirCobranca(
     }
   }
 
+  // O Pix vem com o copia-e-cola e o QR code já desenhado (PNG em base64):
+  // é o que o cliente escaneia na hora, sem sair do aplicativo.
   let pix: string | null = null
+  let qrCode: string | null = null
   if (cobranca.billingType !== 'CREDIT_CARD') {
     try {
-      const codigo = await chamarAsaas<{ payload: string }>(
+      const codigo = await chamarAsaas<{ payload: string; encodedImage?: string }>(
         config,
         `/payments/${criada.id}/pixQrCode`,
       )
       pix = codigo.payload
+      qrCode = codigo.encodedImage ?? null
     } catch {
       // Cobrança sem Pix acoplado; segue válida.
     }
@@ -130,6 +135,7 @@ async function emitirCobranca(
       url_pdf: criada.bankSlipUrl,
       linha_digitavel: linhaDigitavel,
       pix_copia_e_cola: pix,
+      pix_qr_base64: qrCode,
     },
   }
 }

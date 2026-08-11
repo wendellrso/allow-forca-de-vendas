@@ -5,6 +5,7 @@ import {
   podeEmitirBoleto,
   valorDoProvedorParaCentavos,
 } from '@/dominio/boleto'
+import { COBRANCA_POR_TIPO_DE_FORMA, formaGeraCobranca, TIPOS_DE_FORMA } from '@/lib/tipos'
 
 describe('conversão de valores com o provedor', () => {
   it('centavos viram reais exatos', () => {
@@ -38,5 +39,22 @@ describe('podeEmitirBoleto', () => {
     expect(podeEmitirBoleto('86395912453')).toBe(true)
     expect(podeEmitirBoleto(null)).toBe(false)
     expect(podeEmitirBoleto('   ')).toBe(false)
+  })
+})
+
+describe('formaGeraCobranca', () => {
+  it('cobra apenas boleto, Pix e cartão de crédito', () => {
+    expect(formaGeraCobranca('boleto')).toBe(true)
+    expect(formaGeraCobranca('pix')).toBe(true)
+    expect(formaGeraCobranca('cartao_credito')).toBe(true)
+    expect(formaGeraCobranca('dinheiro')).toBe(false)
+    expect(formaGeraCobranca('cartao_debito')).toBe(false)
+    expect(formaGeraCobranca('outro')).toBe(false)
+  })
+
+  it('todo tipo que cobra tem meio de pagamento no provedor', () => {
+    for (const tipo of TIPOS_DE_FORMA) {
+      expect(COBRANCA_POR_TIPO_DE_FORMA[tipo] !== undefined).toBe(formaGeraCobranca(tipo))
+    }
   })
 })

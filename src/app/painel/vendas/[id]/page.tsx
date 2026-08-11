@@ -23,12 +23,19 @@ export const dynamic = 'force-dynamic'
 type ItemComFoto = ItemVenda & { products: { image_url: string | null } | null }
 type ContaComBoleto = ContaAReceber & { boleto_emissions: { status: StatusBoleto } | null }
 
-const ROTULO_BOLETO: Record<StatusBoleto, string> = {
-  simulado: 'Cobrança preparada · simulação',
-  solicitado: 'Cobrança solicitada',
-  emitido: 'Cobrança emitida',
-  erro: 'Falha na emissão',
-  cancelado: 'Cobrança cancelada',
+/**
+ * Sem provedor configurado, "preparada" é simulação e o rótulo precisa dizer
+ * isso. Com provedor, a mesma solicitação está apenas aguardando a emissão.
+ */
+function rotuloDaCobranca(status: StatusBoleto, emissaoReal: boolean): string {
+  const rotulos: Record<StatusBoleto, string> = {
+    simulado: emissaoReal ? 'Cobrança aguardando emissão' : 'Cobrança preparada · simulação',
+    solicitado: 'Cobrança solicitada',
+    emitido: 'Cobrança emitida',
+    erro: 'Falha na emissão',
+    cancelado: 'Cobrança cancelada',
+  }
+  return rotulos[status]
 }
 
 const TOM_BOLETO: Record<StatusBoleto, TomDistintivo> = {
@@ -100,6 +107,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
     (linha) => linha.status !== 'cancelado',
   )
   const hoje = hojeIso()
+  const emissaoReal = configuracaoAsaas() !== null
   const totalRecebido = contas.reduce((soma, conta) => soma + conta.received_cents, 0)
   const totalAReceber = contas.reduce((soma, conta) => soma + conta.amount_cents, 0)
 
@@ -141,7 +149,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
           status={venda.status}
           formas={formas}
           totalCentavos={venda.total_cents}
-          emissaoReal={configuracaoAsaas() !== null}
+          emissaoReal={emissaoReal}
         />
       </div>
 
@@ -237,7 +245,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
                           )}
                           {conta.boleto_emissions !== null ? (
                             <Distintivo tom={TOM_BOLETO[conta.boleto_emissions.status]}>
-                              🧾 {ROTULO_BOLETO[conta.boleto_emissions.status]}
+                              🧾 {rotuloDaCobranca(conta.boleto_emissions.status, emissaoReal)}
                             </Distintivo>
                           ) : null}
                         </div>

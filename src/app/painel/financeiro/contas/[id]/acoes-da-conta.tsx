@@ -18,7 +18,7 @@ import {
   type EstadoRecebimento,
 } from '../../acoes'
 
-/** Links e cópias do boleto emitido — prontos para mandar ao cliente. */
+/** QR code, links e cópias da cobrança emitida — prontos para o cliente. */
 export function BotoesDoBoleto({
   payload,
   telefoneDoCliente,
@@ -43,50 +43,65 @@ export function BotoesDoBoleto({
     urlDoBoleto !== null ? `Olá! Segue o link para pagamento da sua compra: ${urlDoBoleto}` : null
 
   return (
-    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-      {urlDoBoleto !== null ? (
-        <a
-          href={urlDoBoleto}
-          target="_blank"
-          rel="noreferrer"
-          className={`${classeBotaoSecundario} w-auto`}
-        >
-          Abrir cobrança
-        </a>
+    <>
+      {payload.pix_qr_base64 !== null && payload.pix_qr_base64 !== undefined ? (
+        <figure className="mt-3 flex flex-col items-center rounded-xl border border-zinc-200 bg-white p-3">
+          {/* eslint-disable-next-line @next/next/no-img-element -- imagem do provedor em base64, sem otimizador no Worker */}
+          <img
+            src={`data:image/png;base64,${payload.pix_qr_base64}`}
+            alt="QR code do Pix desta cobrança"
+            className="h-44 w-44"
+          />
+          <figcaption className="mt-2 text-center text-xs text-zinc-500">
+            O cliente aponta a câmera do banco para pagar na hora.
+          </figcaption>
+        </figure>
       ) : null}
-      {payload.linha_digitavel !== null && payload.linha_digitavel !== undefined ? (
-        <button
-          type="button"
-          onClick={() => void copiar(payload.linha_digitavel as string, 'linha')}
-          className={`${classeBotaoSecundario} w-auto`}
-        >
-          {copiado === 'linha' ? 'Copiada!' : 'Copiar linha digitável'}
-        </button>
-      ) : null}
-      {payload.pix_copia_e_cola !== null && payload.pix_copia_e_cola !== undefined ? (
-        <button
-          type="button"
-          onClick={() => void copiar(payload.pix_copia_e_cola as string, 'pix')}
-          className={`${classeBotaoSecundario} w-auto`}
-        >
-          {copiado === 'pix' ? 'Copiado!' : 'Copiar Pix'}
-        </button>
-      ) : null}
-      {mensagem !== null ? (
-        <a
-          href={
-            telefoneDoCliente !== null
-              ? `https://wa.me/55${telefoneDoCliente}?text=${encodeURIComponent(mensagem)}`
-              : `https://wa.me/?text=${encodeURIComponent(mensagem)}`
-          }
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 sm:w-auto"
-        >
-          💬 Enviar no WhatsApp
-        </a>
-      ) : null}
-    </div>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        {urlDoBoleto !== null ? (
+          <a
+            href={urlDoBoleto}
+            target="_blank"
+            rel="noreferrer"
+            className={`${classeBotaoSecundario} w-auto`}
+          >
+            Abrir cobrança
+          </a>
+        ) : null}
+        {payload.linha_digitavel !== null && payload.linha_digitavel !== undefined ? (
+          <button
+            type="button"
+            onClick={() => void copiar(payload.linha_digitavel as string, 'linha')}
+            className={`${classeBotaoSecundario} w-auto`}
+          >
+            {copiado === 'linha' ? 'Copiada!' : 'Copiar linha digitável'}
+          </button>
+        ) : null}
+        {payload.pix_copia_e_cola !== null && payload.pix_copia_e_cola !== undefined ? (
+          <button
+            type="button"
+            onClick={() => void copiar(payload.pix_copia_e_cola as string, 'pix')}
+            className={`${classeBotaoSecundario} w-auto`}
+          >
+            {copiado === 'pix' ? 'Copiado!' : 'Copiar Pix'}
+          </button>
+        ) : null}
+        {mensagem !== null ? (
+          <a
+            href={
+              telefoneDoCliente !== null
+                ? `https://wa.me/55${telefoneDoCliente}?text=${encodeURIComponent(mensagem)}`
+                : `https://wa.me/?text=${encodeURIComponent(mensagem)}`
+            }
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 sm:w-auto"
+          >
+            💬 Enviar no WhatsApp
+          </a>
+        ) : null}
+      </div>
+    </>
   )
 }
 

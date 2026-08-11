@@ -103,16 +103,26 @@ export async function salvarConfiguracaoDaForma(
 }
 
 export async function arquivarFormaDePagamento(dados: FormData): Promise<void> {
+  await definirArquivamentoDaForma(dados, new Date().toISOString())
+}
+
+/** Arquivar não pode ser sem volta: a forma volta às novas vendas. */
+export async function restaurarFormaDePagamento(dados: FormData): Promise<void> {
+  await definirArquivamentoDaForma(dados, null)
+}
+
+async function definirArquivamentoDaForma(
+  dados: FormData,
+  arquivadaEm: string | null,
+): Promise<void> {
   await exigirSessao()
   const id = dados.get('id')
   if (typeof id !== 'string' || id === '') {
     return
   }
   const supabase = await criarClienteServidor()
-  await supabase
-    .from('payment_methods')
-    .update({ archived_at: new Date().toISOString() })
-    .eq('id', id)
+  await supabase.from('payment_methods').update({ archived_at: arquivadaEm }).eq('id', id)
   revalidatePath('/painel/cadastros')
+  revalidatePath('/painel/cadastros/formas')
   revalidatePath('/painel/vendas/nova')
 }

@@ -126,6 +126,8 @@ export interface PayloadDeBoleto {
   url_pdf?: string | null
   linha_digitavel?: string | null
   pix_copia_e_cola?: string | null
+  /** Imagem PNG do QR code do Pix em base64, pronta para mostrar ao cliente. */
+  pix_qr_base64?: string | null
   motivo?: string
 }
 
@@ -169,6 +171,20 @@ export const TIPOS_DE_FORMA = [
 ] as const
 
 export type TipoDeForma = (typeof TIPOS_DE_FORMA)[number]
+
+/**
+ * Formas cobradas pelo provedor e o meio de pagamento que cada uma gera. As
+ * demais não têm cobrança: o dinheiro chega pela mão da vendedora.
+ */
+export const COBRANCA_POR_TIPO_DE_FORMA: Partial<Record<TipoDeForma, TipoDeCobranca>> = {
+  boleto: 'BOLETO',
+  pix: 'PIX',
+  cartao_credito: 'CREDIT_CARD',
+}
+
+export function formaGeraCobranca(tipo: TipoDeForma): boolean {
+  return COBRANCA_POR_TIPO_DE_FORMA[tipo] !== undefined
+}
 
 export const ROTULO_TIPO_DE_FORMA: Record<TipoDeForma, string> = {
   dinheiro: 'Dinheiro',

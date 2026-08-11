@@ -235,20 +235,92 @@ begin
     raise exception 'FALHA: cobrança Pix deveria nascer com billing_type PIX (veio %)', v_billing;
   end if;
 
-  -- à vista no Pix não gera cobrança: o dinheiro já entrou
+  -- à vista sem cobrar: o dinheiro já entrou, nada é cobrado do cliente
   v_venda := app.criar_venda_manual(
     v_org, v_cliente,
     jsonb_build_array(jsonb_build_object('produto_id', v_produto, 'quantidade', 1)),
-    'a_vista', null, null, v_pix, 1, 30);
+    'a_vista', null, null, v_pix, 1, 30, false);
   if exists (
     select 1 from app.boleto_emissions b
     join app.receivables r on r.id = b.receivable_id
     where r.sale_id = v_venda
   ) then
-    raise exception 'FALHA: Pix à vista não deveria gerar cobrança no provedor';
+    raise exception 'FALHA: à vista sem cobrar não deveria gerar cobrança no provedor';
+  end if;
+  if not exists (
+    select 1 from app.receivables where sale_id = v_venda and status = 'recebido'
+  ) then
+    raise exception 'FALHA: à vista sem cobrar deveria nascer quitada';
   end if;
 
-  raise notice 'ok: cobrança Pix a prazo e à vista sem cobrança';
+  raise notice 'ok: cobrança Pix a prazo e à vista sem cobrar';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Venda à vista cobrada pelo provedor: conta em aberto, cobrança Pix, sem
+-- recibo inventado. O dinheiro só entra quando o cliente paga.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_org uuid;
+  v_cliente uuid;
+  v_produto uuid;
+  v_pix uuid;
+  v_dinheiro uuid;
+  v_venda uuid;
+  v_conta app.receivables%rowtype;
+  v_billing text;
+  v_hoje date := (now() at time zone 'America/Maceio')::date;
+begin
+  select id into v_org from app.organizations where name = 'Allow';
+  select id into v_cliente from app.customers where organization_id = v_org and name = 'Cliente De Teste';
+  select id into v_produto from app.products where organization_id = v_org and name = 'Produto De Teste';
+  select id into v_pix from app.payment_methods where organization_id = v_org and kind = 'pix';
+  select id into v_dinheiro from app.payment_methods where organization_id = v_org and kind = 'dinheiro';
+
+  v_venda := app.criar_venda_manual(
+    v_org, v_cliente,
+    jsonb_build_array(jsonb_build_object('produto_id', v_produto, 'quantidade', 1)),
+    'a_vista', null, null, v_pix, 1, 30, true);
+
+  select * into v_conta from app.receivables where sale_id = v_venda;
+  if v_conta.status <> 'aberto' or v_conta.received_cents <> 0 then
+    raise exception 'FALHA: à vista cobrada deveria nascer em aberto e zerada (veio % / %)',
+      v_conta.status, v_conta.received_cents;
+  end if;
+  if v_conta.due_date is distinct from v_hoje then
+    raise exception 'FALHA: à vista cobrada deveria vencer hoje (veio %)', v_conta.due_date;
+  end if;
+  if exists (select 1 from app.receipts where receivable_id = v_conta.id) then
+    raise exception 'FALHA: à vista cobrada não pode inventar recibo';
+  end if;
+
+  select billing_type into v_billing from app.boleto_emissions where receivable_id = v_conta.id;
+  if v_billing is distinct from 'PIX' then
+    raise exception 'FALHA: à vista cobrada no Pix deveria gerar cobrança PIX (veio %)', v_billing;
+  end if;
+
+  -- a baixa vem do pagamento, não da confirmação
+  perform app.registrar_recebimento(v_conta.id, v_conta.amount_cents);
+  select * into v_conta from app.receivables where id = v_conta.id;
+  if v_conta.status <> 'recebido' then
+    raise exception 'FALHA: pagamento da cobrança à vista não quitou a conta';
+  end if;
+
+  -- forma que não cobra pelo provedor recusa a cobrança
+  begin
+    perform app.criar_venda_manual(
+      v_org, v_cliente,
+      jsonb_build_array(jsonb_build_object('produto_id', v_produto, 'quantidade', 1)),
+      'a_vista', null, null, v_dinheiro, 1, 30, true);
+    raise exception 'FALHA: dinheiro não deveria aceitar cobrança pelo provedor';
+  exception when others then
+    if position('não gera cobrança' in sqlerrm) = 0 then
+      raise;
+    end if;
+  end;
+
+  raise notice 'ok: venda à vista cobrada pelo provedor';
 end $$;
 
 -- ---------------------------------------------------------------------------
