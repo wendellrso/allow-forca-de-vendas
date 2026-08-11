@@ -5,6 +5,41 @@ import { converterParaCentavos } from '@/dominio/dinheiro'
 import { esquemaCategoriaDeDespesa, esquemaDespesa, errosPorCampo } from '@/dominio/validacao'
 import { exigirSessao } from '@/lib/sessao'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
+import { emitirBoletosPendentes } from '@/servidor/asaas'
+
+export interface EstadoEmissao {
+  erro?: string
+  sucesso?: boolean
+}
+
+/** Nova tentativa de emissão para uma solicitação pendente ou com falha. */
+export async function gerarBoleto(
+  _anterior: EstadoEmissao,
+  dados: FormData,
+): Promise<EstadoEmissao> {
+  await exigirSessao()
+
+  const emissaoId = String(dados.get('emissaoId') ?? '')
+  const contaId = String(dados.get('contaId') ?? '')
+  if (emissaoId === '' || contaId === '') {
+    return { erro: 'Solicitação inválida.' }
+  }
+
+  const supabase = await criarClienteServidor()
+  try {
+    const resultado = await emitirBoletosPendentes(supabase, { emissaoId })
+    if (resultado.emitidos === 0) {
+      revalidatePath(`/painel/financeiro/contas/${contaId}`)
+      return { erro: 'A emissão não concluiu — o motivo aparece no cartão do boleto.' }
+    }
+  } catch {
+    return { erro: 'Não foi possível falar com o provedor. Tente novamente.' }
+  }
+
+  revalidatePath(`/painel/financeiro/contas/${contaId}`)
+  revalidatePath('/painel/financeiro')
+  return { sucesso: true }
+}
 
 export interface EstadoRecebimento {
   erro?: string

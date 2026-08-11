@@ -9,8 +9,14 @@ import {
   type Recibo,
   type StatusBoleto,
 } from '@/lib/tipos'
+import { configuracaoAsaas } from '@/lib/env'
 import { BarraDeProgresso, classeCartao, Distintivo } from '@/componentes/ui'
-import { BotaoEstornar, FormularioReceber } from './acoes-da-conta'
+import {
+  BotaoEstornar,
+  BotaoGerarBoleto,
+  BotoesDoBoleto,
+  FormularioReceber,
+} from './acoes-da-conta'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +25,7 @@ type ContaCompleta = ContaAReceber & {
     id: string
     sale_number: number
     customer_name: string
+    customer_phone: string | null
     customer_id: string | null
   } | null
   boleto_emissions: EmissaoDeBoleto | null
@@ -39,7 +46,9 @@ export default async function PaginaConta({ params }: { params: Promise<{ id: st
   const [{ data: linhaConta }, { data: linhasRecibos }] = await Promise.all([
     supabase
       .from('receivables')
-      .select('*, sales(id, sale_number, customer_name, customer_id), boleto_emissions(*)')
+      .select(
+        '*, sales(id, sale_number, customer_name, customer_phone, customer_id), boleto_emissions(*)',
+      )
       .eq('id', id)
       .maybeSingle(),
     supabase
@@ -55,6 +64,7 @@ export default async function PaginaConta({ params }: { params: Promise<{ id: st
     notFound()
   }
   const recibos = (linhasRecibos ?? []) as Recibo[]
+  const asaasConfigurado = configuracaoAsaas() !== null
   const hoje = hojeIso()
   const saldo = conta.amount_cents - conta.received_cents
   const vencida = conta.status !== 'recebido' && conta.due_date !== null && conta.due_date < hoje
@@ -155,12 +165,38 @@ export default async function PaginaConta({ params }: { params: Promise<{ id: st
               {ROTULO_BOLETO[conta.boleto_emissions.status]}
             </Distintivo>
           </div>
-          {conta.boleto_emissions.status === 'simulado' ? (
+          {conta.boleto_emissions.status === 'emitido' ? (
+            <BotoesDoBoleto
+              payload={conta.boleto_emissions.payload}
+              telefoneDoCliente={conta.sales?.customer_phone ?? null}
+            />
+          ) : null}
+
+          {conta.boleto_emissions.status === 'erro' ? (
+            <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+              {conta.boleto_emissions.payload.motivo ?? 'A emissão falhou.'}
+            </p>
+          ) : null}
+
+          {conta.boleto_emissions.status === 'solicitado' ? (
+            <p className="mt-2 text-sm text-zinc-600">
+              A emissão foi enviada ao provedor e ainda não concluiu. Se demorar, tente de novo.
+            </p>
+          ) : null}
+
+          {conta.boleto_emissions.status === 'simulado' && !asaasConfigurado ? (
             <p className="mt-2 text-sm text-zinc-600">
               Este boleto foi <span className="font-semibold">preparado em modo simulação</span> —
-              nenhuma cobrança bancária real foi emitida. Quando o provedor de boleto for integrado,
-              esta solicitação será enviada a ele automaticamente.
+              nenhuma cobrança bancária real foi emitida. Configure a chave do provedor para a
+              emissão acontecer de verdade.
             </p>
+          ) : null}
+
+          {conta.boleto_emissions.status !== 'emitido' &&
+          conta.boleto_emissions.status !== 'cancelado' &&
+          asaasConfigurado &&
+          emAberto ? (
+            <BotaoGerarBoleto emissaoId={conta.boleto_emissions.id} contaId={conta.id} />
           ) : null}
         </div>
       ) : null}

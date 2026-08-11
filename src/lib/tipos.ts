@@ -111,12 +111,22 @@ export interface Recibo {
 
 export type StatusBoleto = 'simulado' | 'solicitado' | 'emitido' | 'erro' | 'cancelado'
 
+/** O que o provedor devolveu (ou o motivo da falha), guardado na emissão. */
+export interface PayloadDeBoleto {
+  url_fatura?: string
+  url_pdf?: string | null
+  linha_digitavel?: string | null
+  pix_copia_e_cola?: string | null
+  motivo?: string
+}
+
 export interface EmissaoDeBoleto {
   id: string
   receivable_id: string
   status: StatusBoleto
   provider: string | null
   provider_ref: string | null
+  payload: PayloadDeBoleto
   created_at: string
 }
 

@@ -35,10 +35,12 @@ export function FormularioVendaManual({
   clientes,
   produtos,
   formas,
+  emissaoReal,
 }: {
   clientes: ClienteOpcao[]
   produtos: ProdutoOpcao[]
   formas: FormaDePagamento[]
+  emissaoReal: boolean
 }) {
   const [estado, acao, pendente] = useActionState<EstadoAcaoVenda, FormData>(criarVendaManual, {})
   const [clienteId, definirClienteId] = useState('')
@@ -294,7 +296,11 @@ export function FormularioVendaManual({
       {/* Passo 3 — Pagamento, com parcelas e boleto preparado (simulação) */}
       <section className="rounded-xl border border-zinc-200 bg-white p-4">
         <p className="mb-2 text-sm font-bold text-zinc-900">3 · Pagamento</p>
-        <CamposDePagamento formas={formas} totalCentavos={totalCentavos} />
+        <CamposDePagamento
+          formas={formas}
+          totalCentavos={totalCentavos}
+          emissaoReal={emissaoReal}
+        />
         <div className="mt-3">
           <label htmlFor="observacao" className={classeRotulo}>
             Observação

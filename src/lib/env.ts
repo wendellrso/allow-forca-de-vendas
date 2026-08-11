@@ -33,3 +33,31 @@ export function whatsappDaVendedora(): string | null {
   const numero = process.env.ALLOW_WHATSAPP_VENDEDORA
   return numero === undefined || numero.trim() === '' ? null : numero.trim()
 }
+
+export interface ConfiguracaoAsaas {
+  chaveApi: string
+  baseUrl: string
+}
+
+/**
+ * Credencial do provedor de boleto (Asaas). Ausente, o sistema segue em
+ * simulação — nada quebra. ASAAS_AMBIENTE=sandbox aponta para o ambiente de
+ * testes do provedor.
+ */
+export function configuracaoAsaas(): ConfiguracaoAsaas | null {
+  const chave = process.env.ASAAS_API_KEY
+  if (chave === undefined || chave.trim() === '') {
+    return null
+  }
+  const sandbox = process.env.ASAAS_AMBIENTE === 'sandbox'
+  return {
+    chaveApi: chave.trim(),
+    baseUrl: sandbox ? 'https://api-sandbox.asaas.com/v3' : 'https://api.asaas.com/v3',
+  }
+}
+
+/** Token combinado entre o Asaas e o aplicativo para autenticar o webhook. */
+export function tokenDoWebhookAsaas(): string | null {
+  const token = process.env.ASAAS_WEBHOOK_TOKEN
+  return token === undefined || token.trim() === '' ? null : token.trim()
+}

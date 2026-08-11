@@ -4,6 +4,19 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { exigirSessao } from '@/lib/sessao'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
+import { emitirBoletosPendentes } from '@/servidor/asaas'
+
+/** Emissão nunca derruba a venda: falha fica na solicitação, com retentativa. */
+async function tentarEmitirBoletos(
+  supabase: Awaited<ReturnType<typeof criarClienteServidor>>,
+  vendaId: string,
+): Promise<void> {
+  try {
+    await emitirBoletosPendentes(supabase, { vendaId })
+  } catch {
+    // A solicitação permanece pendente; a tela da conta oferece nova tentativa.
+  }
+}
 
 export interface EstadoAcaoVenda {
   erro?: string
@@ -111,6 +124,8 @@ export async function criarVendaManual(
     return { erro: mensagemDoBanco(error.message) }
   }
 
+  await tentarEmitirBoletos(supabase, String(data))
+
   revalidatePath('/painel/vendas')
   redirect(`/painel/vendas/${String(data)}`)
 }
@@ -151,6 +166,8 @@ export async function confirmarVenda(
   if (error !== null) {
     return { erro: mensagemDoBanco(error.message) }
   }
+
+  await tentarEmitirBoletos(supabase, vendaId)
 
   revalidatePath(`/painel/vendas/${vendaId}`)
   revalidatePath('/painel/vendas')

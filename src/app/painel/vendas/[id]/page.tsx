@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { configuracaoAsaas } from '@/lib/env'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { formatarCentavos } from '@/dominio/dinheiro'
 import { dataCurtaDeIso, hojeIso } from '@/dominio/tempo'
@@ -140,6 +141,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
           status={venda.status}
           formas={formas}
           totalCentavos={venda.total_cents}
+          emissaoReal={configuracaoAsaas() !== null}
         />
       </div>
 

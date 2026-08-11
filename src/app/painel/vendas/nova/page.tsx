@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { type Metadata } from 'next'
+import { configuracaoAsaas } from '@/lib/env'
 import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { type Cliente, type FormaDePagamento, type Produto } from '@/lib/tipos'
 import { classeBotaoPrimario, EstadoVazio, TituloPagina } from '@/componentes/ui'
@@ -63,7 +64,12 @@ export default async function PaginaNovaVenda() {
           descricao="Sem produtos ativos não há o que vender."
         />
       ) : (
-        <FormularioVendaManual clientes={clientes} produtos={produtos} formas={formas} />
+        <FormularioVendaManual
+          clientes={clientes}
+          produtos={produtos}
+          formas={formas}
+          emissaoReal={configuracaoAsaas() !== null}
+        />
       )}
       {clientes.length === 0 ? (
         <p className="mt-4 text-center">

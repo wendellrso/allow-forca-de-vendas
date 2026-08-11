@@ -23,11 +23,13 @@ export function AcoesDaVenda({
   status,
   formas,
   totalCentavos,
+  emissaoReal,
 }: {
   vendaId: string
   status: StatusVenda
   formas: FormaDePagamento[]
   totalCentavos: number
+  emissaoReal: boolean
 }) {
   const [estadoConfirmar, acaoConfirmar, confirmando] = useActionState<EstadoAcaoVenda, FormData>(
     confirmarVenda,
@@ -47,7 +49,11 @@ export function AcoesDaVenda({
           Próximo passo: confirmar o pedido — o estoque baixa e o contas a receber é criado.
         </p>
         <input type="hidden" name="vendaId" value={vendaId} />
-        <CamposDePagamento formas={formas} totalCentavos={totalCentavos} />
+        <CamposDePagamento
+          formas={formas}
+          totalCentavos={totalCentavos}
+          emissaoReal={emissaoReal}
+        />
         <button type="submit" disabled={confirmando} className={classeBotaoPrimario}>
           {confirmando ? 'Confirmando…' : 'Confirmar pedido'}
         </button>

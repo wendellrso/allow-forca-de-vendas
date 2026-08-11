@@ -9,15 +9,17 @@ import { classeEntrada, classeRotulo } from '@/componentes/ui'
 
 /**
  * Condição, forma, parcelas e vencimentos — o mesmo bloco na Nova venda e na
- * confirmação do pedido. Boleto força a condição a prazo e mostra, com
- * honestidade, que a emissão de hoje é simulada.
+ * confirmação do pedido. Boleto força a condição a prazo e declara se a
+ * emissão será real (provedor configurado) ou simulada.
  */
 export function CamposDePagamento({
   formas,
   totalCentavos,
+  emissaoReal,
 }: {
   formas: FormaDePagamento[]
   totalCentavos: number
+  emissaoReal: boolean
 }) {
   const [condicao, definirCondicao] = useState<'a_vista' | 'a_prazo'>('a_vista')
   const [formaId, definirFormaId] = useState('')
@@ -210,8 +212,17 @@ export function CamposDePagamento({
           </ul>
           {ehBoleto ? (
             <p className="mt-2 border-t border-zinc-200 pt-2 text-xs text-zinc-500">
-              🧾 Os boletos serão <span className="font-semibold">preparados em simulação</span> —
-              nenhuma cobrança bancária real é emitida nesta etapa.
+              {emissaoReal ? (
+                <>
+                  🧾 Os boletos serão <span className="font-semibold">emitidos no Asaas</span> na
+                  confirmação — prontos para enviar ao cliente.
+                </>
+              ) : (
+                <>
+                  🧾 Os boletos serão <span className="font-semibold">preparados em simulação</span>{' '}
+                  — nenhuma cobrança bancária real é emitida nesta etapa.
+                </>
+              )}
             </p>
           ) : null}
         </div>
