@@ -207,6 +207,51 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
+-- Cobrança Pix a prazo gera solicitação com o meio de pagamento correto
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_org uuid;
+  v_cliente uuid;
+  v_produto uuid;
+  v_pix uuid;
+  v_venda uuid;
+  v_billing text;
+begin
+  select id into v_org from app.organizations where name = 'Allow';
+  select id into v_cliente from app.customers where organization_id = v_org and name = 'Cliente De Teste';
+  select id into v_produto from app.products where organization_id = v_org and name = 'Produto De Teste';
+  select id into v_pix from app.payment_methods where organization_id = v_org and kind = 'pix';
+
+  v_venda := app.criar_venda_manual(
+    v_org, v_cliente,
+    jsonb_build_array(jsonb_build_object('produto_id', v_produto, 'quantidade', 1)),
+    'a_prazo', '2026-09-20', null, v_pix, 1, 30);
+
+  select b.billing_type into v_billing
+  from app.boleto_emissions b join app.receivables r on r.id = b.receivable_id
+  where r.sale_id = v_venda;
+  if v_billing is distinct from 'PIX' then
+    raise exception 'FALHA: cobrança Pix deveria nascer com billing_type PIX (veio %)', v_billing;
+  end if;
+
+  -- à vista no Pix não gera cobrança: o dinheiro já entrou
+  v_venda := app.criar_venda_manual(
+    v_org, v_cliente,
+    jsonb_build_array(jsonb_build_object('produto_id', v_produto, 'quantidade', 1)),
+    'a_vista', null, null, v_pix, 1, 30);
+  if exists (
+    select 1 from app.boleto_emissions b
+    join app.receivables r on r.id = b.receivable_id
+    where r.sale_id = v_venda
+  ) then
+    raise exception 'FALHA: Pix à vista não deveria gerar cobrança no provedor';
+  end if;
+
+  raise notice 'ok: cobrança Pix a prazo e à vista sem cobrança';
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- Despesa com categoria dinâmica e vencimento
 -- ---------------------------------------------------------------------------
 do $$

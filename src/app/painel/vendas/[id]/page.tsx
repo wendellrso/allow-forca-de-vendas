@@ -24,11 +24,11 @@ type ItemComFoto = ItemVenda & { products: { image_url: string | null } | null }
 type ContaComBoleto = ContaAReceber & { boleto_emissions: { status: StatusBoleto } | null }
 
 const ROTULO_BOLETO: Record<StatusBoleto, string> = {
-  simulado: 'Boleto preparado · simulação',
-  solicitado: 'Boleto solicitado',
-  emitido: 'Boleto emitido',
+  simulado: 'Cobrança preparada · simulação',
+  solicitado: 'Cobrança solicitada',
+  emitido: 'Cobrança emitida',
   erro: 'Falha na emissão',
-  cancelado: 'Boleto cancelado',
+  cancelado: 'Cobrança cancelada',
 }
 
 const TOM_BOLETO: Record<StatusBoleto, TomDistintivo> = {

@@ -72,6 +72,7 @@ async function emitirCobranca(
   config: ConfiguracaoAsaas,
   cobranca: {
     pagadorAsaasId: string
+    billingType: string
     valorCentavos: number
     vencimento: string
     descricao: string
@@ -86,7 +87,7 @@ async function emitirCobranca(
     method: 'POST',
     body: JSON.stringify({
       customer: cobranca.pagadorAsaasId,
-      billingType: 'BOLETO',
+      billingType: cobranca.billingType,
       value: centavosParaValorDoProvedor(cobranca.valorCentavos),
       dueDate: cobranca.vencimento,
       description: cobranca.descricao,
@@ -94,26 +95,32 @@ async function emitirCobranca(
     }),
   })
 
+  // Linha digitável só existe no boleto; o Pix copia-e-cola existe no
+  // boleto híbrido e na cobrança Pix. O link de cartão vive na fatura.
   let linhaDigitavel: string | null = null
-  try {
-    const linha = await chamarAsaas<{ identificationField: string }>(
-      config,
-      `/payments/${criada.id}/identificationField`,
-    )
-    linhaDigitavel = linha.identificationField
-  } catch {
-    // Sem linha digitável ainda; o link da fatura cobre o cliente.
+  if (cobranca.billingType === 'BOLETO') {
+    try {
+      const linha = await chamarAsaas<{ identificationField: string }>(
+        config,
+        `/payments/${criada.id}/identificationField`,
+      )
+      linhaDigitavel = linha.identificationField
+    } catch {
+      // Sem linha digitável ainda; o link da fatura cobre o cliente.
+    }
   }
 
   let pix: string | null = null
-  try {
-    const codigo = await chamarAsaas<{ payload: string }>(
-      config,
-      `/payments/${criada.id}/pixQrCode`,
-    )
-    pix = codigo.payload
-  } catch {
-    // Boleto sem Pix acoplado; segue válido.
+  if (cobranca.billingType !== 'CREDIT_CARD') {
+    try {
+      const codigo = await chamarAsaas<{ payload: string }>(
+        config,
+        `/payments/${criada.id}/pixQrCode`,
+      )
+      pix = codigo.payload
+    } catch {
+      // Cobrança sem Pix acoplado; segue válida.
+    }
   }
 
   return {
@@ -130,6 +137,7 @@ async function emitirCobranca(
 interface EmissaoPendente {
   id: string
   status: string
+  billing_type: string
   receivables: {
     id: string
     sale_id: string | null
@@ -168,7 +176,7 @@ export async function emitirBoletosPendentes(
   let consulta = supabase
     .from('boleto_emissions')
     .select(
-      'id, status, receivables!inner(id, sale_id, amount_cents, due_date, description, status, sales(sale_number, customer_id, customer_name, customer_phone))',
+      'id, status, billing_type, receivables!inner(id, sale_id, amount_cents, due_date, description, status, sales(sale_number, customer_id, customer_name, customer_phone))',
     )
     .in('status', ['simulado', 'erro'])
     .limit(30)
@@ -239,7 +247,7 @@ export async function emitirBoletosPendentes(
           provider: 'asaas',
           payload: {
             motivo:
-              'O boleto registrado exige o CPF ou CNPJ do cliente. Preencha na ficha do cliente e tente de novo.',
+              'A cobrança exige o CPF ou CNPJ do cliente. Preencha na ficha do cliente e tente de novo.',
           },
         })
         .eq('id', emissao.id)
@@ -259,6 +267,7 @@ export async function emitirBoletosPendentes(
       })
       const resultado = await emitirCobranca(config, {
         pagadorAsaasId,
+        billingType: emissao.billing_type,
         valorCentavos: conta.amount_cents,
         vencimento: conta.due_date,
         descricao: descricaoDoBoleto(conta.description, venda.sale_number),

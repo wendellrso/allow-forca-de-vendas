@@ -39,7 +39,8 @@ export function BotoesDoBoleto({
   }
 
   const urlDoBoleto = payload.url_pdf ?? payload.url_fatura ?? null
-  const mensagem = urlDoBoleto !== null ? `Olá! Segue o boleto da sua compra: ${urlDoBoleto}` : null
+  const mensagem =
+    urlDoBoleto !== null ? `Olá! Segue o link para pagamento da sua compra: ${urlDoBoleto}` : null
 
   return (
     <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -50,7 +51,7 @@ export function BotoesDoBoleto({
           rel="noreferrer"
           className={`${classeBotaoSecundario} w-auto`}
         >
-          Abrir boleto
+          Abrir cobrança
         </a>
       ) : null}
       {payload.linha_digitavel !== null && payload.linha_digitavel !== undefined ? (
@@ -99,7 +100,7 @@ export function BotaoGerarBoleto({ emissaoId, contaId }: { emissaoId: string; co
       <input type="hidden" name="contaId" value={contaId} />
       <MensagemErro mensagem={estado.erro} />
       <button type="submit" disabled={pendente} className={classeBotaoPrimario}>
-        {pendente ? 'Emitindo…' : 'Gerar boleto agora'}
+        {pendente ? 'Emitindo…' : 'Gerar cobrança agora'}
       </button>
     </form>
   )

@@ -29,6 +29,8 @@ export function CamposDePagamento({
 
   const forma = formas.find((opcao) => opcao.id === formaId)
   const ehBoleto = forma?.kind === 'boleto'
+  const geraCobranca =
+    forma !== undefined && ['boleto', 'pix', 'cartao_credito'].includes(forma.kind)
   const permiteParcelas = condicao === 'a_prazo' && (forma?.allows_installments ?? false)
   const maximoDeParcelas = forma?.max_installments ?? 1
 
@@ -210,17 +212,19 @@ export function CamposDePagamento({
               </li>
             ))}
           </ul>
-          {ehBoleto ? (
+          {geraCobranca ? (
             <p className="mt-2 border-t border-zinc-200 pt-2 text-xs text-zinc-500">
               {emissaoReal ? (
                 <>
-                  🧾 Os boletos serão <span className="font-semibold">emitidos no Asaas</span> na
-                  confirmação — prontos para enviar ao cliente.
+                  🧾 As cobranças (uma por parcela) serão{' '}
+                  <span className="font-semibold">emitidas no Asaas</span> na confirmação — prontas
+                  para enviar ao cliente.
                 </>
               ) : (
                 <>
-                  🧾 Os boletos serão <span className="font-semibold">preparados em simulação</span>{' '}
-                  — nenhuma cobrança bancária real é emitida nesta etapa.
+                  🧾 As cobranças serão{' '}
+                  <span className="font-semibold">preparadas em simulação</span> — nada é emitido de
+                  verdade nesta etapa.
                 </>
               )}
             </p>

@@ -111,6 +111,15 @@ export interface Recibo {
 
 export type StatusBoleto = 'simulado' | 'solicitado' | 'emitido' | 'erro' | 'cancelado'
 
+/** Meio de pagamento da cobrança no provedor. */
+export type TipoDeCobranca = 'BOLETO' | 'PIX' | 'CREDIT_CARD'
+
+export const ROTULO_TIPO_DE_COBRANCA: Record<TipoDeCobranca, string> = {
+  BOLETO: 'Boleto',
+  PIX: 'Cobrança Pix',
+  CREDIT_CARD: 'Link de cartão',
+}
+
 /** O que o provedor devolveu (ou o motivo da falha), guardado na emissão. */
 export interface PayloadDeBoleto {
   url_fatura?: string
@@ -124,6 +133,7 @@ export interface EmissaoDeBoleto {
   id: string
   receivable_id: string
   status: StatusBoleto
+  billing_type: TipoDeCobranca
   provider: string | null
   provider_ref: string | null
   payload: PayloadDeBoleto

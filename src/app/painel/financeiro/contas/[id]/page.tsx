@@ -4,6 +4,7 @@ import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { formatarCentavos } from '@/dominio/dinheiro'
 import { dataCurta, dataCurtaDeIso, hojeIso } from '@/dominio/tempo'
 import {
+  ROTULO_TIPO_DE_COBRANCA,
   type ContaAReceber,
   type EmissaoDeBoleto,
   type Recibo,
@@ -31,12 +32,12 @@ type ContaCompleta = ContaAReceber & {
   boleto_emissions: EmissaoDeBoleto | null
 }
 
-const ROTULO_BOLETO: Record<StatusBoleto, string> = {
-  simulado: 'Preparado em simulação',
-  solicitado: 'Solicitado ao provedor',
-  emitido: 'Emitido',
+const ROTULO_STATUS_DA_COBRANCA: Record<StatusBoleto, string> = {
+  simulado: 'Preparada em simulação',
+  solicitado: 'Solicitada ao provedor',
+  emitido: 'Emitida',
   erro: 'Falha na emissão',
-  cancelado: 'Cancelado',
+  cancelado: 'Cancelada',
 }
 
 export default async function PaginaConta({ params }: { params: Promise<{ id: string }> }) {
@@ -152,7 +153,9 @@ export default async function PaginaConta({ params }: { params: Promise<{ id: st
       {conta.boleto_emissions !== null ? (
         <div className={`${classeCartao} mb-4`}>
           <div className="flex items-center justify-between gap-2">
-            <h2 className="font-bold text-zinc-900">🧾 Boleto</h2>
+            <h2 className="font-bold text-zinc-900">
+              🧾 {ROTULO_TIPO_DE_COBRANCA[conta.boleto_emissions.billing_type]}
+            </h2>
             <Distintivo
               tom={
                 conta.boleto_emissions.status === 'emitido'
@@ -162,7 +165,7 @@ export default async function PaginaConta({ params }: { params: Promise<{ id: st
                     : 'info'
               }
             >
-              {ROTULO_BOLETO[conta.boleto_emissions.status]}
+              {ROTULO_STATUS_DA_COBRANCA[conta.boleto_emissions.status]}
             </Distintivo>
           </div>
           {conta.boleto_emissions.status === 'emitido' ? (
@@ -186,9 +189,8 @@ export default async function PaginaConta({ params }: { params: Promise<{ id: st
 
           {conta.boleto_emissions.status === 'simulado' && !asaasConfigurado ? (
             <p className="mt-2 text-sm text-zinc-600">
-              Este boleto foi <span className="font-semibold">preparado em modo simulação</span> —
-              nenhuma cobrança bancária real foi emitida. Configure a chave do provedor para a
-              emissão acontecer de verdade.
+              Esta cobrança foi <span className="font-semibold">preparada em modo simulação</span> —
+              nada foi emitido de verdade. Configure a chave do provedor para a emissão real.
             </p>
           ) : null}
 
