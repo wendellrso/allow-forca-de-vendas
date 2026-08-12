@@ -15,6 +15,8 @@ interface EventoAsaas {
   payment?: {
     id?: string
     value?: number
+    /** Valor que o provedor credita de fato: bruto menos a tarifa dele. */
+    netValue?: number
     externalReference?: string
   }
 }
@@ -89,5 +91,35 @@ export async function processarWebhookAsaas(requisicao: Request): Promise<Respon
     return Response.json({ erro: 'Falha ao registrar.' }, { status: 500 })
   }
 
+  await registrarTarifa(supabase, conta.id, evento.payment.value, evento.payment.netValue)
+
   return Response.json({ recebido: true })
+}
+
+/**
+ * A tarifa retida pelo provedor é custo da venda e vira despesa, para a
+ * margem na DRE ser a real. Falhar aqui não desfaz a baixa — o dinheiro
+ * entrou de qualquer jeito, e a despesa pode ser lançada à mão depois.
+ */
+async function registrarTarifa(
+  supabase: ReturnType<typeof criarClienteAdministrativo>,
+  contaId: string,
+  valorBruto: number | undefined,
+  valorLiquido: number | undefined,
+): Promise<void> {
+  if (valorBruto === undefined || valorLiquido === undefined) {
+    return
+  }
+  const tarifa = valorDoProvedorParaCentavos(valorBruto) - valorDoProvedorParaCentavos(valorLiquido)
+  if (tarifa <= 0) {
+    return
+  }
+  try {
+    await supabase.rpc('registrar_tarifa_de_cobranca', {
+      p_conta: contaId,
+      p_tarifa_centavos: tarifa,
+    })
+  } catch {
+    // Despesa da tarifa não registrada; a baixa do recebimento está feita.
+  }
 }

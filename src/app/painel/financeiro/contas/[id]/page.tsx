@@ -40,7 +40,7 @@ export default async function PaginaConta({ params }: { params: Promise<{ id: st
   const { id } = await params
   const supabase = await criarClienteServidor()
 
-  const [{ data: linhaConta }, { data: linhasRecibos }] = await Promise.all([
+  const [{ data: linhaConta }, { data: linhasRecibos }, { data: linhaTarifa }] = await Promise.all([
     supabase
       .from('receivables')
       .select(
@@ -54,6 +54,7 @@ export default async function PaginaConta({ params }: { params: Promise<{ id: st
       .eq('receivable_id', id)
       .order('created_at', { ascending: false })
       .limit(100),
+    supabase.from('expenses').select('amount_cents').eq('receivable_id', id).maybeSingle(),
   ])
 
   const conta = linhaConta as unknown as ContaCompleta | null
@@ -61,6 +62,7 @@ export default async function PaginaConta({ params }: { params: Promise<{ id: st
     notFound()
   }
   const recibos = (linhasRecibos ?? []) as Recibo[]
+  const tarifaCentavos = (linhaTarifa as { amount_cents: number } | null)?.amount_cents ?? null
   const asaasConfigurado = configuracaoAsaas() !== null
   const hoje = hojeIso()
   const saldo = conta.amount_cents - conta.received_cents
@@ -142,6 +144,14 @@ export default async function PaginaConta({ params }: { params: Promise<{ id: st
             className={`mt-2 text-center text-sm ${vencida ? 'font-semibold text-red-700' : 'text-zinc-500'}`}
           >
             {vencida ? 'Venceu em' : 'Vence em'} {dataCurtaDeIso(conta.due_date)}
+          </p>
+        ) : null}
+        {tarifaCentavos !== null ? (
+          <p className="mt-2 border-t border-zinc-100 pt-2 text-center text-sm text-zinc-500">
+            Tarifa do provedor {formatarCentavos(tarifaCentavos)} · caiu na conta{' '}
+            <span className="font-semibold text-zinc-800">
+              {formatarCentavos(conta.received_cents - tarifaCentavos)}
+            </span>
           </p>
         ) : null}
       </div>

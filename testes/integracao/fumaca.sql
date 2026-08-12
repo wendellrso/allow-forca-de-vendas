@@ -425,6 +425,50 @@ begin
   raise notice 'ok: pedido do catálogo pelo service_role';
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- Tarifa do provedor vira despesa, uma vez só por cobrança
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_org uuid;
+  v_conta uuid;
+  v_despesa app.expenses%rowtype;
+begin
+  select id into v_org from app.organizations where name = 'Allow';
+  select r.id into v_conta
+  from app.receivables r
+  join app.sales s on s.id = r.sale_id
+  where r.organization_id = v_org
+  order by s.sale_number desc
+  limit 1;
+
+  perform app.registrar_tarifa_de_cobranca(v_conta, 199);
+
+  select * into v_despesa from app.expenses where receivable_id = v_conta;
+  if v_despesa.amount_cents <> 199 or v_despesa.status <> 'pago' then
+    raise exception 'FALHA: tarifa deveria virar despesa paga de 199 (veio % / %)',
+      v_despesa.amount_cents, v_despesa.status;
+  end if;
+  if (select name from app.expense_categories where id = v_despesa.category_id)
+     <> 'Tarifas de cobrança' then
+    raise exception 'FALHA: tarifa deveria cair na categoria própria';
+  end if;
+
+  -- reentrega do webhook não pode duplicar a despesa
+  perform app.registrar_tarifa_de_cobranca(v_conta, 199);
+  if (select count(*) from app.expenses where receivable_id = v_conta) <> 1 then
+    raise exception 'FALHA: tarifa duplicou na reentrega do evento';
+  end if;
+
+  -- provedor sem tarifa não lança nada
+  perform app.registrar_tarifa_de_cobranca(v_conta, 0);
+  if (select count(*) from app.expenses where receivable_id = v_conta) <> 1 then
+    raise exception 'FALHA: tarifa zero não deveria lançar despesa';
+  end if;
+
+  raise notice 'ok: tarifa do provedor virou despesa sem duplicar';
+end $$;
+
 reset role;
 
 select 'INTEGRACAO-OK' as resultado;
